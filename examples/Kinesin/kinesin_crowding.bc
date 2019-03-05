@@ -1,0 +1,17 @@
+f = 10000; //fast rate
+r = 1; //stepping rate
+N = 100; //max number of kinesin in the system
+L = 1000; //microtubule length
+
+//process definitions
+K[i] = {i?[1..N](c),f}.({bump,r*c}.K[i] 
+                      + {@step![i+1],r}.{@leave![i],f}.K[i+1])
+     + {~i?[1..N],f}.{@step![i+1],r}.{@leave![i],f}.K[i+1];
+
+T[] = {@step?[0..L](p),1}.({p?[0..N](c),f}.{p#[c],f}.{p![c+1],f}.T[]
+                         + {~p?[0..N],f}.{p![1],f}.T[])
+    + {@leave?[0..L](p),1}.({p?[1..N](c),f}.{p#[c],f}.{p![c-1],f}.T[]
+                         + {~p?[1..N],f}.{p![0],f}.T[]);
+
+//initial state of the system, 25 kinesin at positions 10,20,30,40
+T[] || K[0] || K[1] || K[2] || K[3] || K[4] || K[5] || K[6];

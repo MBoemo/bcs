@@ -1,0 +1,15 @@
+//EXPECTED BEHAVIOUR:
+//proc1 performs two actions, which mix max and abs operators
+//proc2 will have a negative rate if max isn't working correctly
+//action1 rate should be 4, action2 rate should be 35.5, and action3 rate should be 8
+
+//WHAT IT TESTS:
+// -absolute value operation works correctly and integrates nicely with other arithmetic operations
+// -composite functions (where we have "1-60" within a "max", for instance) are working correctly
+
+//test absolute value
+proc1[] = {action1, 2*max(5,8)/4}.{action2,max(abs(2 + 5/2*5*(1 - 4)),1)};
+proc2[] = {action1, max(1-60,8)}; //this doesn't work right, it produces 1 60 8 - max which gives 58
+
+//system line
+proc1[] || proc2[] ;

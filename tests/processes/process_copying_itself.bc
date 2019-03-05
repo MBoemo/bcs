@@ -1,0 +1,11 @@
+//EXPECTED BEHAVIOUR:
+//proc should spawn a copy of itself and another copy with its parameter incremented by 1
+
+//WHAT IT TESTS:
+// -processes can recursively start other processes
+
+//definitions
+proc[j] = {testAction,1}.(proc[j+1] || proc[j]);
+
+//system line
+proc[0];

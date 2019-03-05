@@ -1,0 +1,14 @@
+//EXPECTED BEHAVIOUR:
+//A beacon is launched by proc2 and is received by proc1 if the set/arithmetic calculation is correct
+
+//WHAT IT TESTS:
+// -combining set and arithmetic operations
+
+testDef = 1;
+
+//process definitions
+proc1[ j ] = {msg?[ (j+1 U 8..10)\5 ], 4}.{longAction,0.000001};
+proc2[ j ] = {msg![ j+1 ], testDef}.( {action1,3.6} + {action2,5} );
+
+//system line
+proc1[1] || proc2[1];

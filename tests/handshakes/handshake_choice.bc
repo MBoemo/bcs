@@ -1,0 +1,17 @@
+//EXPECTED BEHAVIOUR:
+//Message is passed from proc2 to proc1, succeeding if gate and set arithmetic is correct
+//longAction should happen on a much longer timescale than the short actions
+
+//WHAT IT TESTS:
+// -arithmetic and boolean operations in gates
+// -basic handshake functionality
+
+//rate definitions
+rateVar = 3.5;
+
+//process definitions
+proc1[j] = {priorAction,1}.{@chan![j],1}.{sent, 1};
+proc2[] = {@chan?[0..50],1}.{received,1};
+
+//system line
+proc1[3] || proc1[5] || proc2[];

@@ -1,0 +1,11 @@
+//EXPECTED BEHAVIOUR:
+//throw an error that proc has the wrong number of parameters
+
+//WHAT IT TESTS:
+// -we should throw an error and gracefully exit if a process within a definition has been given the incorrect number of parameters
+
+//definitions
+proc[] = {action1, 1}.{action2, 1}.{action3, 1}.proc[i];
+
+//system line
+proc[];

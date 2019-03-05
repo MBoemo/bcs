@@ -1,0 +1,17 @@
+//EXPECTED BEHAVIOUR:
+//process1 and process2 both launch beacons
+//process3 receives one or the other with equal probabilty and binds the parameter it received to x
+//process3 offers launches a beacon with the parameter received, which is received by original process that sent the parameter
+
+//WHAT IT TESTS:
+// -range operator
+// -variable binding via beacon send/receive actions
+
+//process definitions
+process1[ i ] = {launch![i], 10}.{launch2?[i], 1}.{found1,100};
+process2[ i ] = {launch![i], 10}.{launch2?[i], 1}.{found2,100};
+process3[ i ] = {launch?[1..10](x),x}.{launch2![x], 1000};
+
+//system line
+process1[1] || process2[2] || process3[3];
+

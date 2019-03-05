@@ -1,0 +1,9 @@
+#object files and binaries
+bin/bcs
+*.o
+.depend
+
+#backups
+.*swp
+.*swo
+.*swm

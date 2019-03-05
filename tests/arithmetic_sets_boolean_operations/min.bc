@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//proc1 performs three actions which incorporate min, max, and abs functions
+//action1 rate should be 6, action2 rate should be 3, and action3 rate should be 100
+
+//WHAT IT TESTS:
+// -absolute value operation works correctly and integrates nicely with other arithmetic operations
+// -composite functions (where we have "1-60" within a "max", for instance) are working correctly
+
+//test absolute value
+proc1[] = {action1, min(6,12)/3+4}.{action2,max(min(3,7+4),8/3)}.{action3, min(abs(5-1000),100)};
+
+//system line
+proc1[];

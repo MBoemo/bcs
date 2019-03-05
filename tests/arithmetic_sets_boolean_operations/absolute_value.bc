@@ -1,0 +1,12 @@
+//EXPECTED BEHAVIOUR:
+//proc performs two actions, each of which will have a negative rate if the absolute value operator isn't working correctly
+//the first rate should be 1.5 and the second rate should be 198
+
+//WHAT IT TESTS:
+// -absolute value operation works correctly and integrates nicely with other arithmetic operations
+
+//test absolute value
+proc[ i ] = {action1, 2*abs(5-8)/4}.{action2,abs(2 - 5*5*(10 - 2))};
+
+//system line
+proc[0];

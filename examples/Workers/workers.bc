@@ -1,0 +1,13 @@
+N = 100;
+moveRate = 1;
+breakRate = 0.1;
+fast = 100000;
+
+//process definitions
+Worker[i] = {broken?[1..N](x), "N-x"+1}.BusyWorker[x] + [i>0]->{moveLeft, moveRate}.Worker[i-1] + [i<N]->{moveRight, moveRate}.Worker[i+1];
+BusyWorker[i] = {@fixing![i], fast}.{~broken?[i], fast}.Worker[i];
+Machine[i] = {broken![i], breakRate}.BrokenMachine[0,i];
+BrokenMachine[w,i] = {@fixing?[i],1}.BrokenMachine[w+1,i] + [w>0]->{broken#[i], w}.Machine[i];
+
+//system
+5*Worker[50] || Machine[15] || Machine[60] || Machine[80];

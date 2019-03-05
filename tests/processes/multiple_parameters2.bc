@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//proc1 should start two copies of proc2, each with different parameters
+
+//WHAT IT TESTS:
+// -processes can recursively start other processes
+// -parameter arithemtic is correctly passed to newly started processes
+
+//definitions
+proc1[ i, j ] = proc2[i+1, j+2] || proc2[i-1,j-2];
+proc2[ i, j ] = {action2, 1};
+
+//system line
+proc1[0,0];

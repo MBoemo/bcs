@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//proc1 has two sequential actions that test sqrt and exponents
+//action1 rate should be 9, action2 rate should be 6.32456
+
+//WHAT IT TESTS:
+// -sqrt and exponential should cancel each other
+// -generally makes sure sqrt and exp perform correctly
+
+//test absolute value
+proc1[] = {action1, sqrt(9)^2}.{action2,sqrt(10)*2};
+
+//system line
+proc1[];

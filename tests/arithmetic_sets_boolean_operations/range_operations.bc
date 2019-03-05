@@ -1,0 +1,18 @@
+//EXPECTED BEHAVIOUR:
+//proc2 launches a beacon quickly
+//proc1 increments its parameter until it can receive it
+
+//WHAT IT TESTS:
+// -becaon checks
+// -range operators combined with a non-commutative arithmetic operation
+
+//define a fast and slow rate
+fast = 100000;
+slow = 0.0001;
+
+//definitions
+proc1[ i ] = {i?[0..i-1](x), 1} + {~i?[0..i-1], 1}.{search, slow}.proc1[i+1];
+proc2[ i ] = {i![i-1], fast};
+
+//system
+proc1[1] || proc2[10];

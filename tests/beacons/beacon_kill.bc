@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//A beacon is launched by proc and is subsequently received by proc
+//proc then kills the beacon that it launched, so it shouldn't be able to do the second receive action (or the makeItHere action)
+//if you delete the beacon kill, then you should be able to do makeItHere
+
+//WHAT IT TESTS:
+// -beacons are killed and the database functions correctly
+
+//process definitions
+proc[ i ] = {msg![ i ], 1}.{msg?[ i ], 2}.{msg#[ i ], 3}.{msg?[ i ], 4}.{makeItHere, 5};
+
+//system line
+proc[0];

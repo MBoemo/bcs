@@ -1,0 +1,17 @@
+//EXPECTED BEHAVIOUR:
+//proc1 should start proc2
+//proc2 should start proc3
+
+//WHAT IT TESTS:
+// -processes can start other processes
+// -processes can have multiple parameters
+// -when we start other processes, the parameter arithmetic is correct
+// -parameters are okay as floats
+
+//definitions
+proc1[ i, j ] = {action1, 1}.proc2[j+1, i+2];
+proc2[ i, j ] = {action2, 2}.proc3[ j-2, i+4 ];
+proc3[ k, l ] = {action3, 4}.({action5, 6} + {action4, 5});
+
+//system line
+proc1[1.2,2];

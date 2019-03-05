@@ -1,0 +1,17 @@
+//EXPECTED BEHAVIOUR:
+//Similar to basic_beacons.bc but now a variable in the set calculation has been incorrectly entered as a double
+//We should get a graceful and informative exit
+
+//WHAT IT TESTS:
+// -graceful exists on beacon casting issues
+// -casting issues are detected
+
+doubleVar = 1.0;
+
+//process definitions
+proc1[ j ] = {msg?[ 2*doubleVar - 5*5*(j - 2) ], 4}.{longAction,0.000001};
+proc2[ j ] = [ (j == 3) | (j == 1) ] ->  {msg![ 2 - 5*5*(j - 2) ], 1}.( {action1,3.6} + {action2,5} );
+
+//system line
+proc1[3] || proc2[3];
+

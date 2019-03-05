@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//A single process executes two processes in parallel - a beacon send and beacon receive 
+//This exchange should be able to complete successfully and then deadlock
+
+//WHAT IT TESTS:
+// -splitting a process into two independent processes when we encounter a parallel operator
+// -a beacon receive cannot happen until the appropriate beacon is pushed to the database
+
+//process definitions
+process[i] = {msg![i],3} || {msg?[i],2};
+
+//system line
+process[0];
