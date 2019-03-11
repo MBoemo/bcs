@@ -1,0 +1,9 @@
+//Simple kinsin stepping model from Boemo, Cardelli, and Nieduszynski (2019)
+
+r = 1; //define the rate for walking
+
+//process definition
+K[i] = [i<5] -> {walk,r*i}.K[i+1];
+
+//give the initial state of the system
+K[1];

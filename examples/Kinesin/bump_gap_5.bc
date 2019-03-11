@@ -1,0 +1,18 @@
+r = 1; //define the rate for walking
+rs = 3.5; //handshake send rate
+L = 100; //microtubule length
+
+//process definition
+K1[i] = {@bump?[i+1..i+5](x),1/abs(i-x)}.K1[i]
+      + {@bump![i],rs}.K1[i]
+      + [i<L] -> {walk,r}.K1[i+1];
+K2[i] = {@bump?[i+1],1}.K2[i]
+      + {@bump?[i+2],1/2}.K2[i]
+      + {@bump?[i+3],1/3}.K2[i]
+      + {@bump?[i+4],1/4}.K2[i]
+      + {@bump?[i+5],1/5}.K2[i]
+      + {@bump![i],rs}.K2[i]
+      + [i<L] -> {walk,r}.K2[i+1];
+
+//initial state of the system
+K1[5] || K2[8];

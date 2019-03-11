@@ -1,0 +1,28 @@
+//multisite phosphorylation model from Boemo, Cardelli, and Nieduszynski (2019)
+
+intlPhosphatase = 100;
+intlKinase = 100; //varied in Fig. 3c 
+intlReceptors = 10;
+pSites = 20;
+kPlus = 0.1;
+kOn = 100000;
+kMin = 1000;
+kOff = 1;
+kr = 0.1;
+mu = 1; //turned on or off in Fig. 3c
+
+//process definitions
+ENZYME[e] = {@proximalEnzyme![e], 1};
+R[p] = {@proximalEnzyme?[0..1](e),kPlus}.R_PROX[p,e];
+R_PROX[p,e] = {enzLeave, kMin}.(R[p] || ENZYME[e]) 
+            + [e==0 & p<pSites]->{bindK, kOn*(pSites-p)}.R_BOUND[p,e] 
+            + [e==1 & p>0]->{bindP,kOn*p}.R_BOUND[p,e];
+R_CAT[p,e] = {enzymeLeave, kMin}.(R[p] || ENZYME[e]) 
+           + {dwell,mu}.([e==0 & p<pSites]->{bindK,kOn*(pSites-p)}.R_BOUND[p,e] 
+                       + [e==1 & p>0]->{bindP,kOn*p}.R_BOUND[p,e]);
+R_BOUND[p,e] = {unbindEnzyme, kOff}.R_PROX[p,e] 
+             + [e==0]->{phosphorylate,kr}.R_CAT[p+1,e] 
+             + [e==1]->{dephosphorylate,kr}.R_CAT[p-1,e];
+             
+//initial processes in the system
+intlKinase*ENZYME[0] || intlPhosphatase*ENZYME[1] || intlReceptors*R[0];

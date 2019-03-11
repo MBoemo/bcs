@@ -1,0 +1,14 @@
+//Kinsin interference model from Boemo, Cardelli, and Nieduszynski (2019)
+
+r = 1; //define the rate for walking
+rr = 2; //handshake receive rate
+rs = 3.5; //handshake send rate
+L = 100; //microtubule length
+
+//process definition
+K[i] = {@bump?[i+1],rr}.K[i]
+     + {@bump![i],rs}.K[i]
+     + [i<L] -> {walk,r}.K[i+1];
+
+//initial state of the system
+K[5] || K[8];

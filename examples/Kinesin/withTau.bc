@@ -1,0 +1,20 @@
+//Kinsin interacting with microtubule associated protien from Boemo, Cardelli, and Nieduszynski (2019)
+
+f = 10000; //fast rate
+r = 1; //kinesin stepping rate
+rr = 2; //handshake receive rate
+rs = 3.5; //handshake send rate
+d = 5; //tau diffusion rate
+L = 100; //microtubule length
+
+//process definition
+tau[i] = [i>0] -> {left,d}.{block#[i],f}.{block![i-1],f}.tau[i-1] 
+       + [i<L] -> {right,d}.{block#[i],f}.{block![i+1],f}.tau[i+1];
+
+K[i] = {@bump?[i+1],rr}.K[i]
+     + {@bump![i],rs}.K[i]
+     + [i<L] -> {walk,r}.K[i+1]
+     + {block?[i],r};
+
+//initial state of the system
+K[5] || K[8] || tau[10];

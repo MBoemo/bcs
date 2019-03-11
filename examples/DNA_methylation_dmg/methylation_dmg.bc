@@ -1,0 +1,25 @@
+//DNA methylation damage model from Boemo, Cardelli, and Nieduszynski (2019)
+
+k_basal = 0.03125; //1.25 molecules per generation, 1.25*(1/40min)
+k_me = 0.0375; //1.5 molecules per generation, 1.5*(1/40min)
+k_dmg = 0.1;//0.0001;// //aquire DNA damage
+k_division = 0.025;//E.coli replication time about 40 min
+rho = 0.01625; // 0.65 per generation, 0.65*(1/40min)
+kMax = 10; //max rate to generate Ada
+fast = 10000;
+
+//process definitions
+CELL[A,mA,d] = {generate_Ada, k_basal + kMax*(mA/(mA+10))}.CELL[A+1,mA,d]
+             + [d>0 & A>0] -> {generate_meAda,k_me*d*A}.CELL[A-1,mA+1,d-1]
+             + {dna_dmg, k_dmg}.CELL[A,mA,d+1]
+             + {startRep,k_division}.DIV[A,mA,d,0,0,0,0];
+
+DIV[A,mA,d,A1,M1,A2,M2] = [A>0] -> ({seg, fast}.DIV[A-1,mA,d,A1+1,M1,A2,M2]
+                                  + {seg, fast}.DIV[A-1,mA,d,A1,M1,A2+1,M2])
+                        + [mA>0] -> ({seg, fast}.DIV[A,mA-1,d,A1,M1+1,A2,M2] 
+                                   + {seg, fast}.DIV[A,mA-1,d,A1,M1,A2,M2+1])
+                        + [A==0 & mA==0] -> {finish,fast}.(CELL[A1,M1,d]
+                                                        || CELL[A2,M2,d]);
+
+//initial processes in the system
+CELL[0,0,0];
