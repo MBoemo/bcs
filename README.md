@@ -19,5 +19,10 @@ A manual for writing models in the beacon calculus and using bcs is available at
 - a bank of examples,
 - a full list of features.
 
+## Citation
+The beacon calculus language and bcs simulator are described in the following preprint posted to bioRxiv:
+
+Boemo, M.A., Cardelli, L., Nieduszynski, C.A. (2019) The Beacon Calculus: A formal method for the flexible and concise modelling of biological systems.  bioRxiv DOI: https://doi.org/10.1101/579029
+
 ## Questions and Comments
 If you have comments or suggestions for the beacon calculus, the bcs software, or the manual, please Email michael.boemo@path.ox.ac.uk.  Should any bugs arise, please report them to https://github.com/MBoemo/bcs/issues. 
