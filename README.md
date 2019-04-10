@@ -14,7 +14,7 @@ make
 This will put the bcs executable into the bcs/bin directory.  bcs was tested to compile and run on both OSX and Linux systems.
 
 ## Manual
-A manual for writing models in the beacon calculus and using bcs is available at https://www.michaelboemo.com/beacon-calculus-simulator.  It includes:
+A manual for writing models in the beacon calculus and using bcs is available at https://www.michaelboemo.com/bcs.  It includes:
 - quick-start tutorials,
 - a bank of examples,
 - a full list of features.
