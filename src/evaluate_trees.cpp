@@ -116,6 +116,7 @@ std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp ){
 			
 			//get the next token, which should be an open paren
 			t++;
+			if ( t == inputExp.end() ) throw SyntaxError(*(t-1),"Token after function call should be left parentheses.");
 			if ( (*t) -> value() != "(" ) throw SyntaxError(*t,"Token after function call should be left parentheses.");
 			operatorStack.push(*t); //push the parentheses to the stack as normal
 			functionParen.push_back(*t);

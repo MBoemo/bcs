@@ -63,7 +63,7 @@ class progressBar{
 		std::chrono::time_point<std::chrono::steady_clock> _startTime;
 		std::chrono::time_point<std::chrono::steady_clock> _currentTime;
 		unsigned int maxNumber;
-		unsigned int barWidth = 70;
+		unsigned int barWidth = 35;
 		unsigned int _digits;
 
 	public:

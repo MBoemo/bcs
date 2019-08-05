@@ -1,0 +1,14 @@
+//EXPECTED BEHAVIOUR:
+//graceful and informative exit on using functions as parameters/variables
+
+//WHAT IT TESTS:
+// -if we have a function used as a variable in a gate with no trailing token, we give an informative exit
+
+r = 1;
+
+//process definitions
+proc1[a,b] = {action2,r}.[i < max] -> {action3,r}.proc1[a+1];
+proc2[a,b,c,max] = {action1,r}.proc1[a,b,max];
+
+//system
+proc2[1,2,3,4];

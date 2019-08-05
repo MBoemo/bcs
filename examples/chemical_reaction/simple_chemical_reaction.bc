@@ -1,0 +1,12 @@
+//Beacon Calculus model for a simple chemical reaction whereby:
+//A + B --> AB at rate k1
+//AB --> A + B at rate k2
+
+k1 = 0.1;
+k2 = 0.01;
+
+A[] = {bind![0],k1};
+B[] = {bind?[0],1}.AB[];
+AB[] = {unbind,k2}.(A[] || B[]);
+
+100*A[] || 100*B[];
