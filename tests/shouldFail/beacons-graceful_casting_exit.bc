@@ -15,3 +15,4 @@ proc2[ j ] = [ (j == 3) | (j == 1) ] ->  {msg![ 2 - 5*5*(j - 2) ], 1}.( {action1
 //system line
 proc1[3] || proc2[3];
 
+//>WrongType

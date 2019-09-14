@@ -105,9 +105,11 @@ class MessageReceiveBlock: public Block {
 
 	protected:
 		bool _handshake, _check, _hasBindingVar=false;
-		std::string _channelName, _bindingVariable, _owningProcess;
+		std::string _owningProcess;
 		Token *_underlyingToken;
-		std::vector< Token * > _RPNexpression;
+		std::vector< std::vector< Token * > > _channelNames;
+		std::vector< std::string > _bindingVariables;
+		std::vector< std::vector< Token * > > _RPNexpressions;
 		std::vector< Token * > _RPNrate;
 
 	public:
@@ -117,18 +119,18 @@ class MessageReceiveBlock: public Block {
 			_handshake = mb.isHandshake();
 			_check = mb.isCheck();
 			_hasBindingVar = mb.bindsVariable();
-			_RPNexpression = mb.getSetExpression();
-			_channelName = mb.getChannelName();
-			_bindingVariable = mb.getBindingVariable();
+			_RPNexpressions = mb.getSetExpression();
+			_channelNames = mb.getChannelName();
+			_bindingVariables = mb.getBindingVariable();
 			_RPNrate = mb.getRate();
 		}
 		Token * getToken(void) const {return _underlyingToken;}
 		bool isHandshake( void ) const { return _handshake; }
 		bool isCheck( void ) const { return _check; }
 		bool bindsVariable( void ) const { return _hasBindingVar; }
-		std::string getChannelName( void ) const { return _channelName; }
-		std::string getBindingVariable( void ) const { return _bindingVariable; }
-		std::vector< Token * > getSetExpression( void ) const { return _RPNexpression; }
+		std::vector< std::vector< Token * > > getChannelName( void ) const { return _channelNames; }
+		std::vector< std::string > getBindingVariable( void ) const { return _bindingVariables; }
+		std::vector< std::vector< Token * > > getSetExpression( void ) const { return _RPNexpressions; }
 		std::string identify( void ) const { return "MessageReceive"; }
 		std::string getOwningProcess( void ) const { return _owningProcess; }
 		std::vector< Token * > getRate( void ) const { return _RPNrate; }
@@ -138,9 +140,10 @@ class MessageSendBlock: public Block {
 
 	protected:
 		bool _handshake, _kill;
-		std::string _channelName, _owningProcess;
+		std::string _owningProcess;
 		Token *_underlyingToken;
-		std::vector< Token * > _RPNexpression;
+		std::vector< std::vector< Token * > > _channelNames;
+		std::vector< std::vector< Token * > > _RPNexpressions;
 		std::vector< Token * > _RPNrate;
 	public:
 		MessageSendBlock( Token *, std::string );
@@ -148,15 +151,15 @@ class MessageSendBlock: public Block {
 
 			_handshake = mb.isHandshake();
 			_kill = mb.isKill();
-			_RPNexpression = mb.getParameterExpression();
-			_channelName = mb.getChannelName();
+			_RPNexpressions = mb.getParameterExpression();
+			_channelNames = mb.getChannelName();
 			_RPNrate = mb.getRate();
 		}
 		Token * getToken(void) const {return _underlyingToken;}
 		bool isHandshake( void ) const { return _handshake; }
 		bool isKill( void ) const { return _kill; }
-		std::string getChannelName( void ) const { return _channelName; }
-		std::vector< Token * > getParameterExpression( void ) const { return _RPNexpression; }
+		std::vector< std::vector< Token * > > getChannelName( void ) const { return _channelNames; }
+		std::vector< std::vector< Token * > > getParameterExpression( void ) const { return _RPNexpressions; }
 		std::string identify( void ) const { return "MessageSend"; }
 		std::string getOwningProcess( void ) const { return _owningProcess; }
 		std::vector< Token * > getRate( void ) const { return _RPNrate; }
@@ -250,7 +253,7 @@ class Candidate{
 		std::map< std::string, double > localVariables;
 		SystemProcess *processInSystem;
 		double rate;
-		std::set<int> rangeEvaluation;
+		std::vector< int > rangeEvaluation;
 		std::list< SystemProcess > parallelProcesses;
 		Candidate( Block *b, ParameterValues pv, std::map< std::string, double > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
@@ -260,10 +263,10 @@ class Candidate{
 			processInSystem = si;
 			parallelProcesses = pp;
 		}
-		std::string getChannelName(void){
+		std::vector< std::vector< Token * > > getChannelName(void){
 	
 			assert( actionCandidate -> identify() == "MessageSend" or actionCandidate -> identify() == "MessageReceive" );
-			std::string channelName;
+			std::vector< std::vector< Token * > > channelName;
 			if ( actionCandidate -> identify() == "MessageSend" ){
 
 				MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >(actionCandidate);

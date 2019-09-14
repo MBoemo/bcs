@@ -6,15 +6,15 @@
 // not, please Email the author.
 //----------------------------------------------------------
 
+//#define DEBUG 1
 
 #include <string>
 #include <tuple>
 #include <utility>
 #include <iostream>
-#include "lexer.h"
-#include "parser.h"
-#include "simulator.h"
-
+#include "../lexer.h"
+#include "../parser.h"
+#include "../simulator.h"
 
 
 static const char *help=
@@ -31,7 +31,6 @@ static const char *help=
 "  -m,--maxTrans             maximum number of transitions allowed per simulation (default: 1000000),\n"
 "  -d,--maxDuration          maximum duration of each simulation(default: Inf),\n"
 "  -h,--help                 show useage information.\n";
-
 
 
 struct Arguments {
@@ -128,14 +127,30 @@ int main( int argc, char** argv ){
 	/*call lexer */
 	std::vector< std::vector< Token * > > tokenisedSource = scanSource( args.targetFilename );
 
+#if DEBUG
+std::cout << "Finished lexer." << std::endl;
+#endif
+
 	/*call token parser */
 	auto parsedSource = parseSource( tokenisedSource );
+
+#if DEBUG
+std::cout << "Finished parser." << std::endl;
+#endif
 
 	/*call block parser */
 	auto blockParsed = secondPassParse( std::get<0>(parsedSource), std::get<1>(parsedSource), std::get<2>(parsedSource) );
 
+#if DEBUG
+std::cout << "Finished block parser." << std::endl;
+#endif
+
 	/*call the simulator */
 	simulateSystem( blockParsed.first, blockParsed.second, std::get<2>(parsedSource), args.numOfSimulations, args.threads, args.outputFilename, args.maxTrans, args.maxDuration );
+
+#if DEBUG
+std::cout << "Finished simulation." << std::endl;
+#endif
 
 	return 0;
 }

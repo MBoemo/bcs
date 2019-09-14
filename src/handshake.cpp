@@ -17,16 +17,16 @@
 #include "handshake.h"
 #include "error_handling.h"
 
-HandshakeChannel::HandshakeChannel( std::string name, GlobalVariables &globalVars ){
+HandshakeChannel::HandshakeChannel( std::vector< std::string > name, GlobalVariables &globalVars ){
 
 	_channelName = name;
 	_globalVars = globalVars;
 }
 
-std::string HandshakeChannel::getChannelName(void){ return _channelName;}
+std::vector< std::string > HandshakeChannel::getChannelName(void){ return _channelName;}
 
 
-std::shared_ptr<HandshakeCandidate> HandshakeChannel::buildHandshakeCandidate( std::shared_ptr<Candidate> sendCand, std::shared_ptr<Candidate> receiveCand, int sEval ){
+std::shared_ptr<HandshakeCandidate> HandshakeChannel::buildHandshakeCandidate( std::shared_ptr<Candidate> sendCand, std::shared_ptr<Candidate> receiveCand, std::vector<int> sEval ){
 
 	assert( (receiveCand -> actionCandidate) -> identify() == "MessageReceive");
 	assert( (sendCand -> actionCandidate) -> identify() == "MessageSend");
@@ -43,7 +43,11 @@ std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 	MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >(receiveCand -> actionCandidate);
 	if ( mrb -> bindsVariable() ){
 
-		augmentedLocalVars[ mrb -> getBindingVariable() ] = sEval;
+		std::vector< std::string > bindingVarNames = mrb -> getBindingVariable();
+		for ( unsigned int i = 0; i < bindingVarNames.size(); i++ ){
+
+			augmentedLocalVars[ bindingVarNames[i] ] = sEval[i];
+		}
 	}
 
 	double receiveRate = evalRPN_double( mrb -> getRate(), receiveCand -> parameterValues, _globalVars, augmentedLocalVars );
@@ -70,15 +74,24 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added send to receives that are already there
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		assert( ((*addedSend) -> rangeEvaluation).size() == 1 );
-		int sEval = *(((*addedSend) -> rangeEvaluation).begin());
+		std::vector<int> sEval = (*addedSend) -> rangeEvaluation;
 
 		for ( auto receive = _hsReceive_Sp2Candidates.begin(); receive != _hsReceive_Sp2Candidates.end(); receive++ ){
 
 			for ( auto r_cand = (receive -> second).begin(); r_cand != (receive -> second).end(); r_cand++ ){
 
-				std::set<int> rEval = (*r_cand) -> rangeEvaluation;
-				if ( rEval.count(sEval) > 0 ){
+				MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*r_cand) -> actionCandidate);
+				std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
+
+				//check each value against its set expression
+				bool allPassed = true;
+				for ( unsigned int i = 0; i < sEval.size(); i++ ){
+
+					bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
+					if (not setEval) allPassed = false;
+					break;
+				}
+				if (allPassed){
 
 					std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *addedSend, *r_cand, sEval );
 					candidatesAdded++;
@@ -91,16 +104,24 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added receives to sends that are already there
 	for ( auto addedReceive = _receiveToAdd.begin(); addedReceive != _receiveToAdd.end(); addedReceive++ ){
 
-		std::set<int> rEval = (*addedReceive) -> rangeEvaluation;
+		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*addedReceive) -> actionCandidate);
+		std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 
 		for ( auto send = _hsSend_Sp2Candidates.begin(); send != _hsSend_Sp2Candidates.end(); send++ ){
 
 			for ( auto s_cand = (send -> second).begin(); s_cand != (send -> second).end(); s_cand++ ){
 
-				assert( ( (*s_cand) -> rangeEvaluation).size() == 1 );
-				int sEval = *(( (*s_cand) -> rangeEvaluation).begin());
+				std::vector<int> sEval = (*s_cand) -> rangeEvaluation;
 
-				if ( rEval.count(sEval) > 0 ){
+				//check each value against its set expression
+				bool allPassed = true;
+				for ( unsigned int i = 0; i < sEval.size(); i++ ){
+
+					bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*addedReceive) -> parameterValues, _globalVars, (*addedReceive) -> localVariables );
+					if (not setEval) allPassed = false;
+					break;
+				}
+				if (allPassed){
 
 					std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *s_cand, *addedReceive, sEval );
 					candidatesAdded++;
@@ -113,13 +134,22 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added sends to added receives
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		assert( ((*addedSend) -> rangeEvaluation).size() == 1 );
-		int sEval = *(((*addedSend) -> rangeEvaluation).begin());
+		std::vector<int> sEval = (*addedSend) -> rangeEvaluation;
 
 		for ( auto r_cand = _receiveToAdd.begin(); r_cand != _receiveToAdd.end(); r_cand++ ){
 
-			std::set<int> rEval = (*r_cand) -> rangeEvaluation;
-			if ( rEval.count(sEval) > 0 ){
+			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*r_cand) -> actionCandidate);
+			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
+
+			//check each value against its set expression
+			bool allPassed = true;
+			for ( unsigned int i = 0; i < sEval.size(); i++ ){
+
+				bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
+				if (not setEval) allPassed = false;
+				break;
+			}
+			if (allPassed){
 
 				std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *addedSend, *r_cand, sEval );
 				candidatesAdded++;

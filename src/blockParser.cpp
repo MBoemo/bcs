@@ -6,9 +6,7 @@
 // not, please Email the author.
 //----------------------------------------------------------
 
-//#define DEBUG_BLOCK_DEFS 1
-//#define DEBUG_BLOCK_SYSTEMLINE 1
-//#define DEBUG_BLOCK_ARITHMETIC 1
+//#define DEBUG 1
 
 #include <set>
 #include <algorithm>
@@ -46,7 +44,6 @@ void printBlockTree( Tree<Block> pt, Block *b ){
 	}
 
 	if ( pt.isLeaf(b) and pt.isRoot(b) ) std::cout << "Lone node: " << b -> identify() << std::endl;
-
 }
 
 
@@ -54,14 +51,19 @@ std::vector< std::vector< Token * > > splitOnCommas( std::vector< Token * > &tok
 
 	std::vector< std::vector< Token * > > allSplit;
 	std::vector< Token * > buffer;	
+	std::stack< Token * > parenStack;
 	for ( auto t = tokenisedParam.begin(); t < tokenisedParam.end(); t++ ){
 
-		if ( (*t) -> identify() != "Comma" ) buffer.push_back( *t );
-		else{
+		if ( (*t) -> value() == "(" ) parenStack.push( *t );
+		else if ( (*t) -> value() == ")" ) parenStack.pop();
 
+		if ( (*t) -> identify() == "Comma" and parenStack.empty() ) {
+
+			if (buffer.size() == 0) throw SyntaxError(*t, "Thrown by block parser: Comma-separated list cannot contain the empty string.");
 			allSplit.push_back( buffer );
 			buffer.clear();
 		}
+		else buffer.push_back( *t );
 	}	
 	allSplit.push_back( buffer );
 	return allSplit;
@@ -70,6 +72,11 @@ std::vector< std::vector< Token * > > splitOnCommas( std::vector< Token * > &tok
 
 /*BLOCK METHODS------------------------------------------------------------------------------------------------------------------------------------------------------*/
 ActionBlock::ActionBlock( Token *t, std::string s ) : Block( t, s ){
+
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "Starting ActionBlock parsing on: " << t -> value() << std::endl;
+#endif
 
 	assert( t -> identify() == "Action" );
 	_underlyingToken = t;
@@ -83,9 +90,15 @@ ActionBlock::ActionBlock( Token *t, std::string s ) : Block( t, s ){
 	actionName = tokenisedName[0] -> value();
 
 	/*get the rate tokens and make a parse tree on arithmetic operations */
-	std::string rateSubstr = wholeAction.substr(wholeAction.find(",")+1, wholeAction.find("}") - wholeAction.find(",") - 1);
+	std::string rateSubstr = wholeAction.substr(wholeAction.rfind(",")+1, wholeAction.find("}") - wholeAction.rfind(",") - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
 	_RPNrate = shuntingYard( tokenisedRate );
+
+#if DEBUG
+std::cout << "Tokenised rate in RPN: ";
+for ( auto t = _RPNrate.begin(); t < _RPNrate.end(); t++ ) std::cout << (*t) -> value() << " ";
+std::cout << std::endl;
+#endif
 }
 
 
@@ -107,6 +120,11 @@ ParallelBlock::ParallelBlock( Token *t, std::string s ) : Block( t, s ){
 
 GateBlock::GateBlock( Token *t, std::string s ) : Block( t, s ){
 
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "Starting GateBlock parsing on: " << t -> value() << std::endl;
+#endif
+
 	assert( t -> identify() == "Gate" );
 	_underlyingToken = t;
 	_owningProcess = s;
@@ -115,10 +133,21 @@ GateBlock::GateBlock( Token *t, std::string s ) : Block( t, s ){
 	std::string betweenBrackets = wholeGate.substr( wholeGate.find("[") + 1, wholeGate.find("]") - wholeGate.find("[") - 1 );
 	std::vector< Token * > tokenisedGate = scanLine( betweenBrackets, t -> getLine(), t -> getColumn() );
 	_RPNexpression = shuntingYard( tokenisedGate );
+
+#if DEBUG
+std::cout << "Tokenised condition in RPN: ";
+for ( auto t = _RPNexpression.begin(); t < _RPNexpression.end(); t++ ) std::cout << (*t) -> value() << " ";
+std::cout << std::endl;
+#endif
 }
 
 
 MessageSendBlock::MessageSendBlock( Token *t, std::string s ) : Block( t, s ){
+
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "Starting MessageSendBlock parsing on: " << t -> value() << std::endl;
+#endif
 
 	std::set< std::string > acceptableTokens = { "BeaconKill", "MessageSend" };
 	assert( acceptableTokens.find( t -> identify() ) != acceptableTokens.end() );
@@ -126,174 +155,209 @@ MessageSendBlock::MessageSendBlock( Token *t, std::string s ) : Block( t, s ){
 	_owningProcess = s;
 
 	std::string wholeMessage = t -> value();
-	std::string msgSubstr = wholeMessage.substr( wholeMessage.find("{") + 1, wholeMessage.find(",") - wholeMessage.find("{") - 1 );
-	std::vector< Token * > tokenisedMessage = scanLine( msgSubstr, t -> getLine(), t -> getColumn() );
-	std::string parameterExpression;
+	std::string chanSubstr = wholeMessage.substr( wholeMessage.find("{") + 1, wholeMessage.find("[") - wholeMessage.find("{") - 1 );
+	std::vector< Token * > tokenisedChannel = scanLine( chanSubstr, t -> getLine(), t -> getColumn() );
+	std::vector< Token * > buffer;
 
-	/*beacon kill */
-	if ( tokenisedMessage[1] -> value() == "#" ){
+	//parse channel names
+	if (wholeMessage.find('#') != std::string::npos){/*beacon kill */
 
-		if ( tokenisedMessage[0] -> identify() != "Variable" or tokenisedMessage[2] -> identify() != "ParameterCondition" ){
-
-			throw SyntaxError( t, "Thrown by block parser: Message name and/or parameter condition is formatted incorrectly in beacon kill." );
-		}
+		tokenisedChannel.pop_back(); //remove # character from end
 		_handshake = false;
 		_kill = true;
-		_channelName = tokenisedMessage[0] -> value();
-		parameterExpression = tokenisedMessage[2] -> value();
 	}
-	/*beacon launch or handshake send */
-	else{
+	else if (wholeMessage.find('@') != std::string::npos){/*handshake send */
 
-		/*handshake */
-		if ( tokenisedMessage[0] -> value() == "@" ){
-
-			if ( tokenisedMessage[2] -> value() != "!" or tokenisedMessage[1] -> identify() != "Variable" ){
-
-				throw SyntaxError( t, "Thrown by block parser: Bad channel name or '!' specifier missing from handshake send." );
-			}
-			if ( tokenisedMessage[3] -> identify() != "ParameterCondition" ){
-
-				throw SyntaxError( t, "Thrown by block parser: Missing parameter condition or parameter condition is formatted incorrectly." );
-			}
-			_handshake = true;
-			_kill = false;
-			_channelName = tokenisedMessage[1] -> value();
-			parameterExpression = tokenisedMessage[3] -> value();
-		}
-		/*beacon */
-		else{
-
-			if ( tokenisedMessage[1] -> value() != "!" or tokenisedMessage[0] -> identify() != "Variable" ){
-
-				throw SyntaxError( t, "Thrown by block parser: Bad channel name or '!' specifier missing from beacon launch." );
-			}
-			if ( tokenisedMessage[2] -> identify() != "ParameterCondition" ){
-		
-				throw SyntaxError( t, "Thrown by block parser: Missing parameter condition or parameter condition is formatted incorrectly." );
-			}
-			_handshake = false;
-			_kill = false;
-			_channelName = tokenisedMessage[0] -> value();
-			parameterExpression = tokenisedMessage[2] -> value();
-		}
+		tokenisedChannel.pop_back(); //remove ! character from the end
+		tokenisedChannel.erase(tokenisedChannel.begin()); //remove @ character from beginning
+		_handshake = true;
+		_kill = false;
 	}
+	else{/*beacon */
 
-	/*parse arithmetic expression on parameter */
-	std::string betweenSquareBrackets = parameterExpression.substr( parameterExpression.find("[") + 1, parameterExpression.find("]") - parameterExpression.find("[") - 1 );
+		tokenisedChannel.pop_back(); //remove ! character from the end
+		_handshake = false;
+		_kill = false;
+	}
+	_channelNames = splitOnCommas( tokenisedChannel );
+	for ( unsigned int i = 0; i < _channelNames.size(); i++ ) _channelNames[i] = shuntingYard(_channelNames[i]);
+
+#if DEBUG
+std::cout << "Type of send: ";
+if (_handshake) std::cout << "HANDSHAKE" << std::endl;
+else if (_kill) std::cout << "BEACON KILL" << std::endl;
+else std::cout << "BEACON SEND" << std::endl;
+for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
+
+	std::cout << "Channel name expression:" << std::endl;
+	for ( auto t = (*exp).begin(); t < (*exp).end(); t++ ){
+		std::cout << (*t) -> value() << std::endl;
+	}
+}
+#endif
+
+
+	//parse parameters
+	buffer.clear();
+	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
-	_RPNexpression = shuntingYard( tokenisedParamArithmetic );
+	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
+	for ( unsigned int i = 0; i < _RPNexpressions.size(); i++ ) _RPNexpressions[i] = shuntingYard(_RPNexpressions[i]);
 
-	/*get the rate tokens and make a parse tree on arithmetic operations */
-	std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",")+1, wholeMessage.find("}") - wholeMessage.find(",") - 1);
+#if DEBUG
+for ( auto exp = _RPNexpressions.begin(); exp < _RPNexpressions.end(); exp++ ){
+
+	std::cout << "Parameter expression:" << std::endl;
+	for ( auto t = (*exp).begin(); t < (*exp).end(); t++ ){
+		std::cout << (*t) -> value() << std::endl;
+	}
+}
+#endif
+		
+	//get the rate tokens and make a parse tree on arithmetic operations
+	std::string rateSubstr = wholeMessage.substr(wholeMessage.rfind(",")+1, wholeMessage.find("}") - wholeMessage.rfind(",") - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
 	_RPNrate = shuntingYard( tokenisedRate );
+
+#if DEBUG
+std::cout << "Tokenised rate in RPN: ";
+for ( auto t = _RPNrate.begin(); t < _RPNrate.end(); t++ ) std::cout << (*t) -> value() << " ";
+std::cout << std::endl;
+#endif
 }
 
 
 MessageReceiveBlock::MessageReceiveBlock( Token *t, std::string s ) : Block( t, s ){
 
-	std::set< std::string > acceptableTokens = { "BeaconCheck", "MessageReceive" };
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "Starting MessageReceiveBlock parsing on: " << t -> value() << std::endl;
+#endif
+
+	std::set< std::string > acceptableTokens = {"BeaconCheck", "MessageReceive"};
 	assert( acceptableTokens.find( t -> identify() ) != acceptableTokens.end() );
 	_underlyingToken = t;
 	_owningProcess = s;
 
 	std::string wholeMessage = t -> value();
-	std::string msgSubstr = wholeMessage.substr( wholeMessage.find("{") + 1, wholeMessage.find(",") - wholeMessage.find("{") - 1 );
-	std::vector< Token * > tokenisedMessage = scanLine( msgSubstr, t -> getLine(), t -> getColumn() );
-	std::string parameterExpression;
+	std::string chanSubstr = wholeMessage.substr( wholeMessage.find("{") + 1, wholeMessage.find("[") - wholeMessage.find("{") - 1 );
+	std::vector< Token * > tokenisedChannel = scanLine( chanSubstr, t -> getLine(), t -> getColumn() );
+	std::vector< Token * > buffer;
 
-	/*beacon check */
-	if ( tokenisedMessage[0] -> value() == "~" ){
+	//parse channel names
+	if (wholeMessage.find('~') != std::string::npos){/*beacon check */
 
-		if ( tokenisedMessage[1] -> identify() != "Variable" or tokenisedMessage[3] -> identify() != "ParameterCondition" ){
-
-			throw SyntaxError( t, "Thrown by block parser: Message name and/or parameter condition is formatted incorrectly." );
-		}
-		if ( tokenisedMessage[2] -> value() != "?" ){
-
-			throw SyntaxError( t, "Thrown by block parser: Missing '?' specifier from beacon check." );
-		}
+		tokenisedChannel.erase(tokenisedChannel.begin()); //remove ~ character from beginning
+		tokenisedChannel.pop_back(); //remove ? character from the end
 		_handshake = false;
 		_check = true;
-		_channelName = tokenisedMessage[1] -> value();
-		parameterExpression = tokenisedMessage[3] -> value();
 	}
-	/*beacon/handshake receive */
-	else{
+	else if (wholeMessage.find('@') != std::string::npos){/*handshake send */
 
-		/*handshake */
-		if ( tokenisedMessage[0] -> value() == "@" ){
-
-			if ( tokenisedMessage[2] -> value() != "?" or tokenisedMessage[1] -> identify() != "Variable" ){
-
-				throw SyntaxError( t, "Thrown by block parser: Bad channel name or '?' specifier missing in handshake receive." );
-			}
-			if ( tokenisedMessage[3] -> identify() != "ParameterCondition" ){
-			
-				throw SyntaxError( t, "Thrown by block parser: Missing parameter condition or parameter condition is formatted incorrectly." );
-			}
-			_handshake = true;
-			_check = false;
-			_channelName = tokenisedMessage[1] -> value();
-			parameterExpression = tokenisedMessage[3] -> value();
-		}
-		/*beacon */
-		else{
-
-			if ( tokenisedMessage[1] -> value() != "?" or tokenisedMessage[0] -> identify() != "Variable" ){
-
-				throw SyntaxError( t, "Thrown by block parser: Bad channel name or '?' specifier missing in beacon receive." );
-			}
-			if ( tokenisedMessage[2] -> identify() != "ParameterCondition" ){
-			
-				throw SyntaxError( t, "Thrown by block parser: Missing parameter condition or parameter condition is formatted incorrectly." );
-			}
-			_handshake = false;
-			_check = false;
-			_channelName = tokenisedMessage[0] -> value();
-			parameterExpression = tokenisedMessage[2] -> value();
-		}
+		tokenisedChannel.erase(tokenisedChannel.begin()); //remove @ character from beginning
+		tokenisedChannel.pop_back(); //remove ? character from the end
+		_handshake = true;
+		_check = false;
 	}
+	else{/*beacon */
 
-	/*parse arithmetic/set operations to get the range of parameters */
-	std::string betweenSquareBrackets = parameterExpression.substr( parameterExpression.find("[") + 1, parameterExpression.find("]") - parameterExpression.find("[") - 1 );
+		tokenisedChannel.pop_back(); //remove ? character from the end
+		_handshake = false;
+		_check = false;
+	}
+	_channelNames = splitOnCommas( tokenisedChannel );
+	for ( unsigned int i = 0; i < _channelNames.size(); i++ ) _channelNames[i] = shuntingYard(_channelNames[i]);
+
+#if DEBUG
+std::cout << "Type of receive: ";
+if (_handshake) std::cout << "HANDSHAKE" << std::endl;
+else if (_check) std::cout << "BEACON CHECK" << std::endl;
+else std::cout << "BEACON RECEIVE" << std::endl;
+for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
+
+	std::cout << "Channel name expression:" << std::endl;
+	for ( auto t = (*exp).begin(); t < (*exp).end(); t++ ){
+		std::cout << (*t) -> value() << std::endl;
+	}
+}
+#endif
+
+	//parse parameters
+	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
-	_RPNexpression = shuntingYard( tokenisedParamArithmetic );
+	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
+	for ( unsigned int i = 0; i < _RPNexpressions.size(); i++ ) _RPNexpressions[i] = shuntingYard(_RPNexpressions[i]);
 
-	/*get the rate tokens and make a parse tree on arithmetic operations */
-	std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",")+1, wholeMessage.find("}") - wholeMessage.find(",") - 1);
+#if DEBUG
+for ( auto exp = _RPNexpressions.begin(); exp < _RPNexpressions.end(); exp++ ){
+
+	std::cout << "Parameter expression:" << std::endl;
+	for ( auto t = (*exp).begin(); t < (*exp).end(); t++ ){
+		std::cout << (*t) -> value() << std::endl;
+	}
+}
+#endif
+
+	//get the rate tokens and make a parse tree on arithmetic operations
+	std::string rateSubstr = wholeMessage.substr(wholeMessage.rfind(",")+1, wholeMessage.find("}") - wholeMessage.rfind(",") - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
 	_RPNrate = shuntingYard( tokenisedRate );
 
+
+#if DEBUG
+std::cout << "Tokenised rate in RPN: ";
+for ( auto t = _RPNrate.begin(); t < _RPNrate.end(); t++ ) std::cout << (*t) -> value() << " ";
+std::cout << std::endl;
+#endif
+
 	/*get binding variable, if any */
-	std::string afterSquareBrackets = wholeMessage.substr( wholeMessage.find("]") + 1, wholeMessage.find(",") - wholeMessage.find("]") - 1 );
+	std::string afterSquareBrackets = wholeMessage.substr( wholeMessage.find("]") + 1, wholeMessage.rfind(",") - wholeMessage.find("]") - 1 );
 	std::vector< Token * > tokenisedBinding = scanLine( afterSquareBrackets, t -> getLine(), t -> getColumn() );
 	if ( tokenisedBinding.size() > 0 ){
 
 		_hasBindingVar = true;
-		if ( tokenisedBinding.size() != 3 ){
 
-			throw SyntaxError( t, "Thrown by block parser: Binding variable is formatted incorrectly." );
-		}
-		if ( tokenisedBinding[1] -> identify() != "Variable" or tokenisedBinding[0] -> identify() != "Parentheses" or tokenisedBinding[2] -> identify() != "Parentheses" ){
-		
-			throw SyntaxError( t, "Thrown by block parser: Binding variable is formatted incorrectly.");
-		}
-		_bindingVariable = tokenisedBinding[1] -> value();
-	}
+		if ( (tokenisedBinding[0] -> value()) != "(" or (tokenisedBinding.back() -> value()) != ")"){
 
-#if DEBUG_BLOCK_ARITHMETIC
-std::cout << "-----------" << std::endl;
-std::cout << _channelName << std::endl;
-printTree( _setTree, _setTree.getRoot() );
-printTree( _rateTree, _rateTree.getRoot() );
-std::cout << "-----------" << std::endl;
+			throw SyntaxError( tokenisedBinding[0], "Binding variables must be enclosed in parentheses.");
+		}
+
+		for ( unsigned int i = 1; i < tokenisedBinding.size()-1; i++ ){ //go through list of binding variables
+
+#if DEBUG
+std::cout << "Binding variable token: " << tokenisedBinding[i] -> value() << std::endl;
 #endif
+
+			if ( tokenisedBinding[i] -> identify() == "Comma" ){
+
+				if (i % 2 != 0) throw SyntaxError( tokenisedBinding[i], "Binding variables must be a comma-separated list of variables.");	
+			}
+			else if (tokenisedBinding[i] -> identify() == "Variable"){
+
+				if (i % 2 != 1) throw SyntaxError( tokenisedBinding[i], "Binding variables must be a comma-separated list of variables.");	
+				_bindingVariables.push_back( tokenisedBinding[i] -> value() );
+			}
+			else{
+
+				throw SyntaxError( tokenisedBinding[i], "Binding variables must be a comma-separated list of variables.");	
+			}
+		}
+		
+		//we should have a binding variable for each parameter in the receive action
+		if (_bindingVariables.size() != _RPNexpressions.size()){
+
+			throw SyntaxError( t, "Binding variables must be a comma-separated list of variables.");	
+		}
+	}
 }
 
 
 ProcessBlock::ProcessBlock( Token *t, std::string s ) : Block( t, s ){
+
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "Starting MessageReceiveBlock parsing on: " << t -> value() << std::endl;
+#endif
 
 	assert( t -> identify() == "Process" );
 	_underlyingToken = t;
@@ -303,10 +367,6 @@ ProcessBlock::ProcessBlock( Token *t, std::string s ) : Block( t, s ){
 	/*set parameter name */
 	_processName = wholeProcess.substr(0, wholeProcess.find('['));
 
-#if DEBUG_BLOCK_ARITHMETIC
-std::cout << "-----------" << std::endl;
-std::cout << _processName << std::endl;
-#endif
 	/*parse parameter arithmetic expression, if any */
 	std::string betweenBrackets = wholeProcess.substr( wholeProcess.find("[") + 1, wholeProcess.find("]") - wholeProcess.find("[") - 1 );
 	std::vector< Token * > tokenisedParam = scanLine( betweenBrackets, t -> getLine(), t -> getColumn() );
@@ -318,6 +378,15 @@ std::cout << _processName << std::endl;
 			_parameterExpressions.push_back( shuntingYard( *tv ) );
 		}
 	}
+#if DEBUG
+for ( auto exp = _parameterExpressions.begin(); exp < _parameterExpressions.end(); exp++ ){
+
+	std::cout << "Parameter expression:" << std::endl;
+	for ( auto t = (*exp).begin(); t < (*exp).end(); t++ ){
+		std::cout << (*t) -> value() << std::endl;
+	}
+}
+#endif
 }
 
 
@@ -404,15 +473,11 @@ void secondParseSystemLine( std::vector< Token * > &tokenisedSL, std::list< Syst
 				ParameterValues pValues;
 				for ( unsigned int i = 0; i < split_tokenisedParam.size(); i++ ){
 
-					if ( split_tokenisedParam[i].size() != 1 ) throw SyntaxError( *t, "Thrown by block parser: Parameter value must be a defined variable, int literal, or float literal." );
-					std::string parameterValue = split_tokenisedParam[i][0] -> value();
-					if (split_tokenisedParam[i][0] -> identify() == "IntLiteral"){
-						pValues.updateValue(parameterVar[i], atoi( parameterValue.c_str()));
-					}
-					else if (split_tokenisedParam[i][0] -> identify() == "DoubleLiteral"){
-						pValues.updateValue(parameterVar[i], atof( parameterValue.c_str()));
-					}
-					else throw SyntaxError(split_tokenisedParam[i][0], "Thrown by block parser: Parameters must be int literals or float literals.");
+					std::vector< Token * > parsedIntlExp = shuntingYard( split_tokenisedParam[i] );
+					ParameterValues ParameterValues_dummy;
+					std::map< std::string, double > localVariables_dummy;
+					double intlValue = evalRPN_double(parsedIntlExp, ParameterValues_dummy, globalVars, localVariables_dummy);
+					pValues.updateValue(parameterVar[i], intlValue);
 				}
 				sp.parameterValues = pValues;
 			}
@@ -423,8 +488,10 @@ void secondParseSystemLine( std::vector< Token * > &tokenisedSL, std::list< Syst
 				system.push_back( sp );
 			}
 
-#if DEBUG_BLOCK_SYSTEMLINE
-std::cout << processName << std::endl;
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "SYSTEM LINE PARSE:" << std::endl;
+std::cout << "Process name: " << processName << std::endl;
 std::cout << "copies: " << multiplier << std::endl << "parse tree:" << std::endl;
 printBlockTree( sp.parseTree, sp.parseTree.getRoot() );
 std::cout << "ints:" << std::endl;
@@ -553,10 +620,11 @@ std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess 
 		secondParseProcessDef( children[1], root, *pt, pd.parseTree, processName );
 		processName2Definition[ processName ] = pd;
 
-#if DEBUG_BLOCK_DEFS
-std::cout << processName << std::endl;
+#if DEBUG
+std::cout << "---------------" << std::endl;
+std::cout << "STARTING BLOCK PARSING ON :" << processName << std::endl;
+std::cout << "Parse tree:" << std::endl;
 printBlockTree( pd.parseTree, (pd.parseTree).getRoot() );
-std::cout << "-----------" << std::endl;
 #endif
 	}
 
@@ -570,7 +638,7 @@ std::cout << "-----------" << std::endl;
 	std::list< SystemProcess > system;
 	secondParseSystemLine( tokenisedSystemLine, system, processName2Definition, globalVars );
 
-#if defined DEBUG_BLOCK_DEFS || defined DEBUG_BLOCK_SYSTEMLINE || defined DEBUG_BLOCK_ARITHMETIC
+#if defined DEBUG
 exit(EXIT_SUCCESS);
 #endif
 	return std::make_pair(processName2Definition, system );

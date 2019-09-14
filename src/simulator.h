@@ -28,8 +28,8 @@ class System{
 		int _transitionsTaken = 0, _maxTransitions, _candidatesLeft = 0;
 
 		std::map< SystemProcess * , std::vector< std::shared_ptr<Candidate> > > _nonMsgCandidates;
-		std::map< std::string, std::shared_ptr<BeaconChannel> > _beacons_Name2Channel;
-		std::map< std::string, std::shared_ptr<HandshakeChannel> > _handshakes_Name2Channel;
+		std::map< std::vector<std::string>, std::shared_ptr<BeaconChannel> > _beacons_Name2Channel;
+		std::map< std::vector<std::string>, std::shared_ptr<HandshakeChannel> > _handshakes_Name2Channel;
 
 		std::map< std::string, ProcessDefinition > _name2ProcessDef;
 		std::stringstream _outputStream;
@@ -46,6 +46,8 @@ class System{
 			}
 		}
 		void writeTransition( double , std::shared_ptr<Candidate>, std::stringstream & );
+		std::string writeChannelName( std::vector< std::vector< Token * > > );
+		std::vector< std::string > substituteChannelName( std::vector< std::vector< Token * > >, ParameterValues, std::map< std::string, double > & );
 		void sumTransitionRates( SystemProcess *, Tree<Block> &, Block *, std::list< SystemProcess >, ParameterValues );
 		void updateSystem( std::shared_ptr<Candidate>, std::list< SystemProcess * > & );
 		void splitOnParallel(SystemProcess &, Block *, std::list< SystemProcess> & );
@@ -54,6 +56,7 @@ class System{
 		void removeChosenFromSystem( std::shared_ptr<Candidate> );
 		void getParallelProcesses( std::shared_ptr<Candidate>, std::list< SystemProcess * > & );
 		SystemProcess * updateSpForTransition( std::shared_ptr<Candidate> );
+		bool variableIsDefined(std::string, ParameterValues, std::map< std::string, double > &);
 };
 
 

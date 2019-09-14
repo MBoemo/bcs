@@ -64,6 +64,21 @@ System::System( std::list< SystemProcess > &s, std::map< std::string, ProcessDef
 }
 
 
+std::string System::writeChannelName( std::vector< std::vector< Token * > > channelName ){
+
+	std::string out;
+	for ( auto i = channelName.begin(); i < channelName.end(); i++ ){ //for each comma-separated value
+
+		for ( auto j = (*i).begin(); j < (*i).end(); j++ ){ //for each token in that value
+
+			out += (*j) -> value();
+		}
+		if (i != channelName.end() - 1) out += ',';
+	}
+	return out;
+}
+
+
 void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, std::stringstream &ss ){
 
 	Block *actionDone = chosen -> actionCandidate;
@@ -77,12 +92,12 @@ void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, st
 	else if ( actionDone -> identify() == "MessageSend" ){
 
 		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( actionDone );
-		ss << time << '\t' << msb -> getChannelName() << '\t' << actionDone -> getOwningProcess();
+		ss << time << '\t' << writeChannelName(msb -> getChannelName()) << '\t' << actionDone -> getOwningProcess();
 	}
 	else if ( actionDone -> identify() == "MessageReceive" ){
 
 		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( actionDone );
-		ss << time << '\t' << mrb -> getChannelName()  << '\t' << actionDone -> getOwningProcess();
+		ss << time << '\t' << writeChannelName(mrb -> getChannelName())  << '\t' << actionDone -> getOwningProcess();
 	}
 
 	for ( auto p = parameterNames.begin(); p < parameterNames.end(); p++ ){
@@ -98,13 +113,34 @@ void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, st
 }
 
 
-std::string substituteChannelName( std::string channelName, std::map< std::string, int > &parameterValues ){
+bool System::variableIsDefined(std::string varName, ParameterValues currentParameters, std::map< std::string, double > &localVariables){
 
-	if ( parameterValues.find( channelName ) != parameterValues.end() ){
+	bool inGlobal =  _globalVars.doubleValues.count(varName) > 0 or _globalVars.intValues.count(varName) > 0;
+	bool inParams =  currentParameters.doubleValues.count(varName) > 0 or currentParameters.intValues.count(varName) > 0;
+	bool inLocal = localVariables.count(varName) > 0;
+	if (not inGlobal and not inParams and not inLocal) return false;
+	else return true;
+}
 
-		return std::to_string( parameterValues[channelName] );
+
+std::vector< std::string > System::substituteChannelName( std::vector< std::vector< Token * > > channelExpressions, ParameterValues currentParameters, std::map< std::string, double > &localVariables ){
+
+	std::vector< std::string > channelName;
+
+	for (auto exp = channelExpressions.begin(); exp < channelExpressions.end(); exp++ ){
+
+		if ( (*exp).size() == 1 and (*exp)[0] -> identify() == "Variable" and not variableIsDefined( (*exp)[0] -> value(), currentParameters, localVariables) ){
+
+			channelName.push_back( (*exp)[0] -> value() );
+		}
+
+		else{ //this is an expression or variable that should be substituted
+		
+			double evalIdx = evalRPN_double(*exp, currentParameters, _globalVars, localVariables);
+			channelName.push_back( std::to_string(evalIdx) );
+		}
 	}
-	else return channelName;
+	return channelName;
 }
 
 
@@ -127,7 +163,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 	else if ( current -> identify() == "MessageSend" ){
 
 		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( current );
-		std::string channelName = substituteChannelName( msb -> getChannelName(), currentParameters.intValues );
+		std::vector< std::string > channelName = substituteChannelName( msb -> getChannelName(), currentParameters, sp -> localVariables );
 
 		if ( msb -> isHandshake() ){
 
@@ -137,8 +173,14 @@ void System::sumTransitionRates( SystemProcess *sp,
 			std::shared_ptr< Candidate > cand( new Candidate( msb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 
 			cand -> rate = rate;
-			int paramEval = evalRPN_int( msb -> getParameterExpression(), currentParameters, _globalVars, sp -> localVariables );
-			(cand -> rangeEvaluation).insert( paramEval );
+
+			//evaluate each parameter expression
+			std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
+			for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
+
+				int paramEval = evalRPN_int( *exp, currentParameters, _globalVars, sp -> localVariables );
+				(cand -> rangeEvaluation).push_back(paramEval);
+			}
 
 			if ( _handshakes_Name2Channel.find( channelName ) != _handshakes_Name2Channel.end() ){
 
@@ -166,14 +208,11 @@ void System::sumTransitionRates( SystemProcess *sp,
 	else if ( current -> identify() == "MessageReceive" ){
 
 		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( current );
-		std::string channelName = substituteChannelName( mrb -> getChannelName(), currentParameters.intValues );
+		std::vector< std::string > channelName = substituteChannelName( mrb -> getChannelName(), currentParameters, sp -> localVariables );
 
 		if ( mrb -> isHandshake() ){
 
 			std::shared_ptr< Candidate > cand( new Candidate( mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
-			std::set<int> setEval = evalRPN_set( mrb -> getSetExpression(), currentParameters, _globalVars, sp -> localVariables );
-
-			cand -> rangeEvaluation = setEval;
 
 			if ( _handshakes_Name2Channel.find( channelName ) != _handshakes_Name2Channel.end() ){
 
@@ -204,6 +243,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 				_beacons_Name2Channel[channelName] -> addCandidate( current, sp, parallelProcesses, currentParameters, _candidatesLeft, _rateSum );
 			}
 			else{
+
 				std::shared_ptr< BeaconChannel > newChannel( new BeaconChannel(channelName, _globalVars) );
 				_beacons_Name2Channel[channelName] = newChannel;
 				_beacons_Name2Channel[channelName] -> addCandidate( current, sp, parallelProcesses, currentParameters, _candidatesLeft, _rateSum );
@@ -299,7 +339,7 @@ SystemProcess * System::updateSpForTransition( std::shared_ptr<Candidate> chosen
 		assert( children.size() == 1 );
 		newSp -> parseTree = treeForAction.getSubtree( children[0] );
 #if DEBUG
-std::cout << "kill sp " << SPtoModify << " and add " << newSp << std::endl;
+std::cout << "   Update for transition: killed " << SPtoModify << " and added " << newSp << std::endl;
 #endif
 		return newSp;
 	}
@@ -363,13 +403,13 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove ){
 	//reshuffle potential vs active beacon receives
 	for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
 
-		(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
+		(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum, candToRemove -> parameterValues);
 	}
 
 	//remove the system process from the system
 	_currentProcesses.erase( std::find(_currentProcesses.begin(), _currentProcesses.end(), sp ) ); 
 #if DEBUG
-std::cout << "deleting system process pointer: " << sp << std::endl;
+std::cout << "   Removing chosen from system: deleting system process pointer " << sp << std::endl;
 #endif
 	delete sp;
 }
@@ -379,18 +419,20 @@ void System::simulate(void){
 
 	while ( _candidatesLeft > 0 and _transitionsTaken < _maxTransitions and _totalTime <= _maxDuration ){
 
-#if DEBUG
-std::cout << "-----------------" << std::endl;
-std::cout << "Candidates left: " << _candidatesLeft << std::endl;
-std::cout << "Transitions taken: " << _transitionsTaken << std::endl;
-#endif
-
 		/*draw time of next transition */
 		std::random_device rd;
 		std::mt19937 rnd_gen( rd() );
 		std::exponential_distribution< double > expDist(_rateSum);
 		double exponentialDraw = expDist(rnd_gen);
 		_totalTime += exponentialDraw;
+
+#if DEBUG
+std::cout << "-----------------" << std::endl;
+std::cout << "Candidates left: " << _candidatesLeft << std::endl;
+std::cout << "Transitions taken: " << _transitionsTaken << std::endl;
+std::cout << "Rate sum: " << _rateSum << std::endl;
+std::cout << "Total time elapsed: " << _totalTime << std::endl;
+#endif
 
 		/*monte carlo step to decide next transition */
 		std::uniform_real_distribution< double > uniDist(0.0, 1.0);
@@ -411,7 +453,11 @@ std::cout << "Transitions taken: " << _transitionsTaken << std::endl;
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
-std::cout << "picked non-msg action" << std::endl;
+std::cout << ">Candidate picked: non-msg action ";
+Block *b = (*tc) -> actionCandidate;
+Token *t = b -> getToken();
+std::cout << t -> value();
+std::cout << " at rate " << (*tc) -> rate << std::endl;
 #endif
 					//designate the chosen one
 					getParallelProcesses( *tc, toAdd );
@@ -433,7 +479,11 @@ std::cout << "picked non-msg action" << std::endl;
 			if ( beaconCand != NULL ){
 
 #if DEBUG
-std::cout << "picked a beacon" << std::endl;
+std::cout << ">Candidate picked: beacon ";
+Block *b = beaconCand -> actionCandidate;
+Token *t = b -> getToken();
+std::cout << t -> value();
+std::cout << " at rate " << beaconCand -> rate << std::endl;
 #endif
 
 				getParallelProcesses( beaconCand, toAdd );
@@ -445,8 +495,11 @@ std::cout << "picked a beacon" << std::endl;
 					MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( beaconCand -> actionCandidate );
 					if ( mrb -> bindsVariable() ){
 
-						assert( (beaconCand -> rangeEvaluation).size() == 1 );
-						newSp -> localVariables[ mrb -> getBindingVariable() ] = *( (beaconCand -> rangeEvaluation).begin() );
+						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
+						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
+						
+							newSp -> localVariables[ bindingVars[i] ] = (beaconCand -> rangeEvaluation)[i];
+						}
 					}
 				}
 
@@ -466,7 +519,14 @@ std::cout << "picked a beacon" << std::endl;
 			if ( hsCand != NULL ){
 
 #if DEBUG
-std::cout << "picked a handshake" << std::endl;
+std::cout << ">Candidate picked: handshake ";
+Block *b = (hsCand -> hsSendCand) -> actionCandidate;
+Token *t = b -> getToken();
+std::cout << t -> value() << " ";
+b = (hsCand -> hsReceiveCand) -> actionCandidate;
+t = b -> getToken();
+std::cout << t -> value();
+std::cout << " at rate " << hsCand -> rate << std::endl;
 #endif
 
 				//handshake send
@@ -476,14 +536,19 @@ std::cout << "picked a handshake" << std::endl;
 
 				//handshake receive
 				getParallelProcesses( hsCand -> hsReceiveCand, toAdd );
-				SystemProcess *newSp_receive = updateSpForTransition( hsCand -> hsReceiveCand ); //issue here
+				SystemProcess *newSp_receive = updateSpForTransition( hsCand -> hsReceiveCand );
 
 				if ( newSp_receive ){
 					//bind a new variable if applicable
 					MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (hsCand -> hsReceiveCand) -> actionCandidate );
 					if ( mrb -> bindsVariable() ){
 
-						newSp_receive -> localVariables[ mrb -> getBindingVariable() ] = hsCand -> receivedParam;
+						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
+						std::vector< int > receivedParams = hsCand -> getReceivedParam();
+						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
+
+							newSp_receive -> localVariables[ bindingVars[i] ] = receivedParams[i];
+						}
 					}
 					toAdd.push_back(newSp_receive);
 				}
@@ -505,7 +570,7 @@ std::cout << "picked a handshake" << std::endl;
 		_transitionsTaken++;
 
 #if DEBUG
-std::cout << "reformatting" << std::endl;
+std::cout << "   Reformatting system... ";
 #endif
 
 		//re-format the system
@@ -523,7 +588,8 @@ std::cout << "reformatting" << std::endl;
 		toAdd.insert( toAdd.end(), newProcesses.begin(), newProcesses.end() );
 
 #if DEBUG
-std::cout << "re-summing transitions" << std::endl;
+std::cout << "Done." << std::endl;
+std::cout << "   Re-summing transitions... ";
 #endif
 
 		//sum the transition rates for non-handshake candidates while buildling a list of candshake candidates
@@ -534,7 +600,8 @@ std::cout << "re-summing transitions" << std::endl;
 		}
 
 #if DEBUG
-std::cout << "re-summing handshakes" << std::endl;
+std::cout << "Done." << std::endl;
+std::cout << "   Re-summing handshakes... ";
 #endif
 
 		//sum handshake transitions
@@ -547,6 +614,9 @@ std::cout << "re-summing handshakes" << std::endl;
 			_rateSum += rateSumIncrease;
 		}
 		_currentProcesses.insert( _currentProcesses.end(), toAdd.begin(), toAdd.end() );
+#if DEBUG
+std::cout << "Done." << std::endl;
+#endif
 	}
 }
 

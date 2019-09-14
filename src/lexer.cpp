@@ -237,7 +237,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	ParameterTestMachine.add_edge( "q1", setNumeric, "q1" );
 	ParameterTestMachine.add_edge( "q1", {'.'}, "q2" );
 	ParameterTestMachine.add_edge( "q2", {'.'}, "q1" );
-	ParameterTestMachine.add_edge( "q1", {'\\', '+', '*', '-', '(', ')', ' ','_','|','"'}, "q1" );
+	ParameterTestMachine.add_edge( "q1", {'\\', '+', '*', '-', '(', ')', ' ','_','|',','}, "q1" );
 	ParameterTestMachine.add_edge( "q1", {']'}, "endState" );
 
 	/*accepts operators (+,-,||,.,") */
@@ -313,7 +313,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	ProcessTestMachine.add_edge( "q1", {'['}, "q2" );
 	ProcessTestMachine.add_edge( "q2", setAlpha, "q2" );
 	ProcessTestMachine.add_edge( "q2", setNumeric, "q2" );
-	ProcessTestMachine.add_edge( "q2", {'_',' ',',','+','-','*','.','^','(',')','"'}, "q2" );
+	ProcessTestMachine.add_edge( "q2", {'_',' ',',','+','-','*','.','^','(',')','/'}, "q2" );
 	ProcessTestMachine.add_edge( "q2", {']'}, "endState1" );
 
 	/*accepts gates */
@@ -322,7 +322,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	GateTestMachine.add_edge( "q1", {' '}, "q1" );
 	GateTestMachine.add_edge( "q1", setNumeric, "q1" );
 	GateTestMachine.add_edge( "q1", setAlpha, "q1" );
-	GateTestMachine.add_edge( "q1", {'>', '<', '=', '!', '|', '&','(',')','_','.','+','-','*','^','/','"'}, "q1" );
+	GateTestMachine.add_edge( "q1", {'>', '<', '=', '!', '|', '&','(',')','_','.','+','-','*','^','/'}, "q1" );
 	GateTestMachine.add_edge( "q1", {']'}, "q8" );
 	GateTestMachine.add_edge( "q8", {' '}, "q8" );
 	GateTestMachine.add_edge( "q8", {'-'}, "q9" );
@@ -344,7 +344,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	ActionTestMachine.add_edge( "q2", {','}, "q4" );
 	ActionTestMachine.add_edge( "q4", setAlpha, "q4" );
 	ActionTestMachine.add_edge( "q4", setNumeric, "q4" );
-	ActionTestMachine.add_edge( "q4", {'_',' ',',','+','-','*','^','(',')','.','/','"'}, "q4" );
+	ActionTestMachine.add_edge( "q4", {'_',' ',',','+','-','*','^','(',')','.','/'}, "q4" );
 	ActionTestMachine.add_edge( "q4", {'}'}, "endState" );
 
 	/*MESSAGING */
@@ -352,17 +352,21 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	MessageSendTestMachine.designate_endState( "endState" );
 	MessageSendTestMachine.add_edge( MessageSendTestMachine.startState, {'{'}, "q1" );
 	MessageSendTestMachine.add_edge( "q1", {' '}, "q1" );
-	MessageSendTestMachine.add_edge( "q1", {'@'}, "p1" );
-	MessageSendTestMachine.add_edge( "p1", setAlpha, "q2" );
-	MessageSendTestMachine.add_edge( "p1", {'_'}, "q2" );
+	MessageSendTestMachine.add_edge( "q1", {'@'}, "q2" );
+	MessageSendTestMachine.add_edge( "p1", {' '}, "s1" );
+	MessageSendTestMachine.add_edge( "s1", {' '}, "s1" );
+
+	MessageSendTestMachine.add_edge( "q1", {'_',',','+','/','-','^','*','(',')','.'}, "q2" );
 	MessageSendTestMachine.add_edge( "q1", setAlpha, "q2" );
-	MessageSendTestMachine.add_edge( "q1", {'_'}, "q2" );
+	MessageSendTestMachine.add_edge( "q1", setNumeric, "q2" );
+
+	MessageSendTestMachine.add_edge( "q2", {'_',' ',',','+','/','-','^','*','(',')','.'}, "q2" );
 	MessageSendTestMachine.add_edge( "q2", setAlpha, "q2" );
 	MessageSendTestMachine.add_edge( "q2", setNumeric, "q2" );
-	MessageSendTestMachine.add_edge( "q2", {'_'}, "q2" );
+
 	MessageSendTestMachine.add_edge( "q2", {'!'}, "q3" );
 	MessageSendTestMachine.add_edge( "q3", {'['}, "q4" );
-	MessageSendTestMachine.add_edge( "q4", {'_',' ',',','+','/','-','^','*','(',')','.','"'}, "q4" );
+	MessageSendTestMachine.add_edge( "q4", {'_',' ',',','+','/','-','^','*','(',')','.'}, "q4" );
 	MessageSendTestMachine.add_edge( "q4", setAlpha, "q4" );
 	MessageSendTestMachine.add_edge( "q4", setNumeric, "q4" );
 	MessageSendTestMachine.add_edge( "q4", {']'}, "q5" );
@@ -372,28 +376,31 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	MessageSendTestMachine.add_edge( "q5", {','}, "q7" );
 	MessageSendTestMachine.add_edge( "q7", setAlpha, "q7" );
 	MessageSendTestMachine.add_edge( "q7", setNumeric, "q7" );
-	MessageSendTestMachine.add_edge( "q7", {'_',' ',',','+','-','*','^','.','(',')','/','"'}, "q7" );
+	MessageSendTestMachine.add_edge( "q7", {'_',' ',',','+','-','*','^','.','(',')','/'}, "q7" );
 	MessageSendTestMachine.add_edge( "q7", {'}'}, "endState" );
 
 	/*accepts a handshake receive or beacon receive {@channelName?[i](x),rate} or {channelName?[i],rate} */
 	MessageReceiveTestMachine.designate_endState( "endState" );
 	MessageReceiveTestMachine.add_edge( MessageReceiveTestMachine.startState, {'{'}, "q1" );
 	MessageReceiveTestMachine.add_edge( "q1", {' '}, "q1" );
-	MessageReceiveTestMachine.add_edge( "q1", {'@'}, "p1" );
-	MessageReceiveTestMachine.add_edge( "p1", setAlpha, "q2" );
-	MessageReceiveTestMachine.add_edge( "p1", {'_'}, "q2" );
+	MessageReceiveTestMachine.add_edge( "q1", {'@'}, "q2" );
+	MessageReceiveTestMachine.add_edge( "p1", {' '}, "s1" );
+	MessageReceiveTestMachine.add_edge( "s1", {' '}, "s1" );
+
+	MessageReceiveTestMachine.add_edge( "q1", {'_',',','+','/','-','^','*','(',')','.'}, "q2" );
 	MessageReceiveTestMachine.add_edge( "q1", setAlpha, "q2" );
-	MessageReceiveTestMachine.add_edge( "q1", {'_'}, "q2" );
+	MessageReceiveTestMachine.add_edge( "q1", setNumeric, "q2" );
+
+	MessageReceiveTestMachine.add_edge( "q2", {'_',' ',',','+','/','-','^','*','(',')','.'}, "q2" );
 	MessageReceiveTestMachine.add_edge( "q2", setAlpha, "q2" );
 	MessageReceiveTestMachine.add_edge( "q2", setNumeric, "q2" );
-	MessageReceiveTestMachine.add_edge( "q2", {'_'}, "q2" );
+
 	MessageReceiveTestMachine.add_edge( "q2", {'?'}, "q3" );
 	MessageReceiveTestMachine.add_edge( "q3", {'['}, "q4" );
-	MessageReceiveTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','*','^','(',')','.','\\','"'}, "q4" );
+	MessageReceiveTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','*','^','(',')','.','\\'}, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", setAlpha, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", setNumeric, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", {']'}, "q5" );
-
 	MessageReceiveTestMachine.add_edge( "q5", {'('}, "r1" );
 	MessageReceiveTestMachine.add_edge( "r1", {' '}, "r4" );
 	MessageReceiveTestMachine.add_edge( "r4", {' '}, "r4" );
@@ -406,31 +413,39 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	MessageReceiveTestMachine.add_edge( "r2", {'_'}, "r2" );
 	MessageReceiveTestMachine.add_edge( "r2", {' '}, "r3" );
 	MessageReceiveTestMachine.add_edge( "r3", {' '}, "r3" );
+	MessageReceiveTestMachine.add_edge( "r3", {','}, "r1" );
+	MessageReceiveTestMachine.add_edge( "r2", {','}, "r1" );
 	MessageReceiveTestMachine.add_edge( "r2", {')'}, "q6" );
 	MessageReceiveTestMachine.add_edge( "r3", {')'}, "q6" );
-
 	MessageReceiveTestMachine.add_edge( "q5", {' '}, "q6" );
 	MessageReceiveTestMachine.add_edge( "q6", {' '}, "q6" );
 	MessageReceiveTestMachine.add_edge( "q6", {','}, "q7" );
 	MessageReceiveTestMachine.add_edge( "q5", {','}, "q7" );
 	MessageReceiveTestMachine.add_edge( "q7", setAlpha, "q7" );
 	MessageReceiveTestMachine.add_edge( "q7", setNumeric, "q7" );
-	MessageReceiveTestMachine.add_edge( "q7", {'_',' ',',','+','-','*','^','.','(',')','/','"'}, "q7" );
+	MessageReceiveTestMachine.add_edge( "q7", {'_',' ',',','+','-','*','^','.','(',')','/'}, "q7" );
 	MessageReceiveTestMachine.add_edge( "q7", {'}'}, "endState" );
 
 	/*accepts a beacon check {~channelName?[i], rate} */
 	BeaconCheckTestMachine.designate_endState( "endState" );
 	BeaconCheckTestMachine.add_edge( BeaconCheckTestMachine.startState, {'{'}, "q1" );
 	BeaconCheckTestMachine.add_edge( "q1", {' '}, "q1" );
-	BeaconCheckTestMachine.add_edge( "q1", {'~'}, "p1" );
-	BeaconCheckTestMachine.add_edge( "p1", setAlpha, "q2" );
-	BeaconCheckTestMachine.add_edge( "p1", {'_'}, "q2" );
+	BeaconCheckTestMachine.add_edge( "q1", {'~'}, "q2" );
+	BeaconCheckTestMachine.add_edge( "p1", {' '}, "s1" );
+	BeaconCheckTestMachine.add_edge( "s1", {' '}, "s1" );
+
+
+	BeaconCheckTestMachine.add_edge( "q1", {'_',',','+','/','-','^','*','(',')','.'}, "q2" );
+	BeaconCheckTestMachine.add_edge( "q1", setAlpha, "q2" );
+	BeaconCheckTestMachine.add_edge( "q1", setNumeric, "q2" );
+
+	BeaconCheckTestMachine.add_edge( "q2", {'_',' ',',','+','/','-','^','*','(',')','.'}, "q2" );
 	BeaconCheckTestMachine.add_edge( "q2", setAlpha, "q2" );
 	BeaconCheckTestMachine.add_edge( "q2", setNumeric, "q2" );
-	BeaconCheckTestMachine.add_edge( "q2", {'_'}, "q2" );
+
 	BeaconCheckTestMachine.add_edge( "q2", {'?'}, "q3" );
 	BeaconCheckTestMachine.add_edge( "q3", {'['}, "q4" );
-	BeaconCheckTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','^','*','(',')','.','\\','"'}, "q4" );
+	BeaconCheckTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','^','*','(',')','.','\\'}, "q4" );
 	BeaconCheckTestMachine.add_edge( "q4", setAlpha, "q4" );
 	BeaconCheckTestMachine.add_edge( "q4", setNumeric, "q4" );
 	BeaconCheckTestMachine.add_edge( "q4", {']'}, "q5" );
@@ -440,21 +455,25 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	BeaconCheckTestMachine.add_edge( "q5", {','}, "q7" );
 	BeaconCheckTestMachine.add_edge( "q7", setAlpha, "q7" );
 	BeaconCheckTestMachine.add_edge( "q7", setNumeric, "q7" );
-	BeaconCheckTestMachine.add_edge( "q7", {'_',' ',',','+','-','^','*','.','(',')','/','"'}, "q7" );
+	BeaconCheckTestMachine.add_edge( "q7", {'_',' ',',','+','-','^','*','.','(',')','/'}, "q7" );
 	BeaconCheckTestMachine.add_edge( "q7", {'}'}, "endState" );
 
 	/*accepts a beacon kill {channelName#[i], rate} */
 	BeaconKillTestMachine.designate_endState( "endState" );
 	BeaconKillTestMachine.add_edge( BeaconKillTestMachine.startState, {'{'}, "q1" );
 	BeaconKillTestMachine.add_edge( "q1", {' '}, "q1" );
+
+	BeaconKillTestMachine.add_edge( "q1", {'_',',','+','/','-','^','*','(',')','.'}, "q2" );
 	BeaconKillTestMachine.add_edge( "q1", setAlpha, "q2" );
-	BeaconKillTestMachine.add_edge( "q1", {'_'}, "q2" );
+	BeaconKillTestMachine.add_edge( "q1", setNumeric, "q2" );
+
+	BeaconKillTestMachine.add_edge( "q2", {'_',' ',',','+','/','-','^','*','(',')','.'}, "q2" );
 	BeaconKillTestMachine.add_edge( "q2", setAlpha, "q2" );
 	BeaconKillTestMachine.add_edge( "q2", setNumeric, "q2" );
-	BeaconKillTestMachine.add_edge( "q2", {'_'}, "q2" );
+
 	BeaconKillTestMachine.add_edge( "q2", {'#'}, "q3" );
 	BeaconKillTestMachine.add_edge( "q3", {'['}, "q4" );
-	BeaconKillTestMachine.add_edge( "q4", {'_',' ',',','+','/','-','*','^','.','(',')','"'}, "q4" );
+	BeaconKillTestMachine.add_edge( "q4", {'_',' ',',','+','/','-','*','^','.','(',')'}, "q4" );
 	BeaconKillTestMachine.add_edge( "q4", setAlpha, "q4" );
 	BeaconKillTestMachine.add_edge( "q4", setNumeric, "q4" );
 	BeaconKillTestMachine.add_edge( "q4", {']'}, "q5" );

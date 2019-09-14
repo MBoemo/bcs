@@ -14,18 +14,20 @@ ifeq ($(UNAME),Darwin)
 endif
 
 MAIN_EXECUTABLE = bin/bcs
+TEST_EXECUTABLE = bin/test
 
 all: depend $(MAIN_EXECUTABLE)
 
 SUBDIRS = src
 CPP_SRC := $(foreach dir, $(SUBDIRS), $(wildcard $(dir)/*.cpp))
 C_SRC := $(foreach dir, $(SUBDIRS), $(wildcard $(dir)/*.c))
-EXE_SRC = src/bcs.cpp
+EXE_SRC = src/main/bcs.cpp src/test/bcs_test.cpp
 
 #generate object names
 CPP_OBJ = $(CPP_SRC:.cpp=.o)
 C_OBJ = $(C_SRC:.c=.o)
 
+.PHONY: depend
 depend: .depend
 
 .depend: $(CPP_SRC) $(C_SRC) $(EXE_SRC)
@@ -40,8 +42,26 @@ depend: .depend
 	$(CC) -o $@ -c $(CFLAGS) $(H5_INCLUDE) $<
 
 #compile the main executable
-$(MAIN_EXECUTABLE): src/bcs.o $(CPP_OBJ) $(C_OBJ)
-	$(CXX) -o $@ $(CXXFLAGS) $(CPP_OBJ) $(C_OBJ) $(LIBFLAGS)
+$(MAIN_EXECUTABLE): src/main/bcs.o $(CPP_OBJ) $(C_OBJ)
+	$(CXX) -o $@ $(CXXFLAGS) $(CPP_OBJ) $(C_OBJ) src/main/bcs.o $(LIBFLAGS)
 
+#compile the test executable
+$(TEST_EXECUTABLE): src/test/bcs_test.o $(CPP_OBJ) $(C_OBJ)
+	$(CXX) -o $@ $(CXXFLAGS) $(CPP_OBJ) $(C_OBJ) src/test/bcs_test.o $(LIBFLAGS)
+
+PASS_SUBDIRS = tests/shouldPass
+FAIL_SUBDIRS = tests/shouldFail
+.PHONY: test
+test: $(PASS_SUBDIRS)/* $(FAIL_SUBDIRS)/* $(TEST_EXECUTABLE)
+
+	for file in $(PASS_SUBDIRS)/*; do \
+		./$(TEST_EXECUTABLE) $${file};  \
+	done
+	for file in $(FAIL_SUBDIRS)/*; do \
+		./$(TEST_EXECUTABLE) --shouldFail $${file};  \
+	done
+	rm test.simulation.bcs
+
+.PHONY: clean	
 clean:
-	rm -f $(MAIN_EXECUTABLE) $(CPP_OBJ) $(C_OBJ) src/bcs.o
+	rm -f $(MAIN_EXECUTABLE) $(TEST_EXECUTABLE) $(CPP_OBJ) $(C_OBJ) src/main/bcs.o src/test/bcs_test.o

@@ -1,6 +1,8 @@
 #object files and binaries
 bin/bcs
+bin/test
 bin/*.
+src/*.
 *.o
 .depend
 

@@ -22,12 +22,12 @@ class HandshakeCandidate{
 
 	public:
 		std::shared_ptr<Candidate> hsSendCand, hsReceiveCand;
-		int receivedParam;
+		std::vector< int > receivedParam;
 		bool bindsVariable = false;
 		std::string bindingVariable;
 		double rate;
-		std::string channel;
-		HandshakeCandidate( std::shared_ptr<Candidate> send, std::shared_ptr<Candidate> receive, double r, int i, std::string c ){
+		std::vector< std::string > channel;
+		HandshakeCandidate( std::shared_ptr<Candidate> send, std::shared_ptr<Candidate> receive, double r, std::vector< int > i, std::vector< std::string > c ){
 
 			hsSendCand = send;
 			hsReceiveCand = receive;
@@ -35,7 +35,7 @@ class HandshakeCandidate{
 			receivedParam = i;
 			channel = c;
 		}
-		int getReceivedParam(void){
+		std::vector< int > getReceivedParam(void){
 
 			return receivedParam;
 		}
@@ -45,7 +45,7 @@ class HandshakeCandidate{
 class HandshakeChannel{
 
 	private:
-		std::string _channelName;
+		std::vector< std::string > _channelName;
 		GlobalVariables _globalVars;
 		std::map< SystemProcess *, std::list< std::shared_ptr<Candidate> > > _hsSend_Sp2Candidates;
 		std::map< SystemProcess *, std::list< std::shared_ptr<Candidate> > > _hsReceive_Sp2Candidates;
@@ -55,10 +55,10 @@ class HandshakeChannel{
 		std::list< std::shared_ptr<Candidate> > _receiveToAdd;
 
 	public:
-		HandshakeChannel( std::string name, GlobalVariables & );
+		HandshakeChannel( std::vector< std::string > name, GlobalVariables & );
 		HandshakeChannel( const HandshakeChannel & );
-		std::string getChannelName(void);
-		std::shared_ptr<HandshakeCandidate> buildHandshakeCandidate( std::shared_ptr<Candidate> , std::shared_ptr<Candidate> , int );
+		std::vector< std::string > getChannelName(void);
+		std::shared_ptr<HandshakeCandidate> buildHandshakeCandidate( std::shared_ptr<Candidate> , std::shared_ptr<Candidate> , std::vector<int> );
 		std::pair<int, double> updateHandshakeCandidates(void);
 		std::pair< int, double > cleanSPFromChannel( SystemProcess * );
 		std::shared_ptr<HandshakeCandidate> pickCandidate(double &, double , double );

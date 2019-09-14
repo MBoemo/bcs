@@ -1,0 +1,14 @@
+//EXPECTED BEHAVIOUR:
+//A beacon is launched by proc1 which cannot be received by proc2, followed by a beacon that proc2 can receive
+//proc2 receives a beacon on the channel
+
+//WHAT IT TESTS:
+// -channel names and processes with multiple values
+// -the ability of parameters to function correctly as channel names
+
+//definitions
+proc1[ i, j ] = {i,j![i,j],3}.{i,j![i+1,j],3}.{sentChannelBeacon,2};
+proc2[ i, j ] = {i,j?[i+1,j](x,y),0.1}.{shouldReceive,1};
+
+//system line
+proc1[1,2] || proc2[1,2];

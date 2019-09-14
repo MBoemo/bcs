@@ -1,0 +1,15 @@
+//EXPECTED BEHAVIOUR:
+//Malformed expression in the channle name for proc1 should trigger a graceful exit
+
+//WHAT IT TESTS:
+// -handshake channel names are properly checked
+// -basic handshake functionality
+
+//process definitions
+proc1[i,j] = {@chan,2**x![i,j],1};
+proc2[x,y] = {@chan?[x,y](a,b),1};
+
+//system line
+proc1[3,5] || proc2[6,3];
+
+//>SyntaxError

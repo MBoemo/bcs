@@ -1,0 +1,15 @@
+//EXPECTED BEHAVIOUR:
+//Should exit gracefully on discovering that the handshake receive in line 10 attempts to bind two received parameters to one binding variable (number of these must be equal)
+
+//WHAT IT TESTS:
+// -safe variable binding
+// -basic handshake functionality
+
+//process definitions
+proc1[i,j] = {@chan![i,j],1};
+proc2[x,y] = {@chan?[x,y](a),1};
+
+//system line
+proc1[3,5] || proc2[6,3];
+
+//>SyntaxError

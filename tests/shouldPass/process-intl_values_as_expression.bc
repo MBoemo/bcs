@@ -1,0 +1,16 @@
+//EXPECTED BEHAVIOUR:
+//should exit cleanly with the initial parameter value set according to the expression
+
+//WHAT IT TESTS:
+// -we can specify the initial value of parameters as expressions of global variables
+
+//global variables
+gv1 = 5.0;
+gv2 = 10;
+
+//definitions
+proc1[i] = {i![0],1}.{sent,1};
+proc2[j] = {j?[0],1}.{received,1};
+
+//system line
+proc1[gv1*gv2] || proc2[50];

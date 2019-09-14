@@ -1,0 +1,14 @@
+//EXPECTED BEHAVIOUR:
+//We should exit gracefully on malformed gate expressions
+
+//WHAT IT TESTS:
+// -malformed infix expressions are gracefully caught and appropriately handled 
+
+//definitions
+proc1[ i, j ] = [i>=j..1+5] -> {i+1,max(max(j*5/2,-1),j)![max(i+1,j*6/3)],1};
+proc2[ i, j ] = {abs(i*21),j/2?[i+3..1,j-4](x,y),1};
+
+//system line
+proc1[1,2] || proc2[3,1];
+
+//>SyntaxError
