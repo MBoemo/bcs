@@ -37,7 +37,7 @@ std::cout << "sending sp: " << sendCand -> processInSystem << std::endl;
 std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 #endif
 
-	std::map< std::string, double > augmentedLocalVars = receiveCand -> localVariables;
+	std::map< std::string, Numerical > augmentedLocalVars = receiveCand -> localVariables;
 
 	//if we have a binding variable, we're allowed to use it in the rate calculation for the handshake receive candidate
 	MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >(receiveCand -> actionCandidate);
@@ -46,14 +46,16 @@ std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 		std::vector< std::string > bindingVarNames = mrb -> getBindingVariable();
 		for ( unsigned int i = 0; i < bindingVarNames.size(); i++ ){
 
-			augmentedLocalVars[ bindingVarNames[i] ] = sEval[i];
+			Numerical n;
+			n.setInt(sEval[i]);
+			augmentedLocalVars[ bindingVarNames[i] ] = n;
 		}
 	}
 
-	double receiveRate = evalRPN_double( mrb -> getRate(), receiveCand -> parameterValues, _globalVars, augmentedLocalVars );
-	if ( receiveRate <= 0 ) throw BadRate( mrb -> getToken() );
+	Numerical receiveRate = evalRPN_numerical( mrb -> getRate(), receiveCand -> parameterValues, _globalVars, augmentedLocalVars );
+	if ( receiveRate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
 
-	double rate = (sendCand -> rate) * receiveRate;
+	double rate = (sendCand -> rate) * receiveRate.doubleCast();
 	std::shared_ptr<HandshakeCandidate> hsCand( new HandshakeCandidate( sendCand, receiveCand, rate, sEval, _channelName ) );
 
 	//associate both the sending and receiving system processes with this handshake candidate, and vice versa
@@ -74,7 +76,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added send to receives that are already there
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		std::vector<int> sEval = (*addedSend) -> rangeEvaluation;
+		std::vector<Numerical> sEval_n = (*addedSend) -> rangeEvaluation;
+		std::vector<int> sEval;
+		
+		//check types
+		for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
 
 		for ( auto receive = _hsReceive_Sp2Candidates.begin(); receive != _hsReceive_Sp2Candidates.end(); receive++ ){
 
@@ -111,7 +117,12 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 
 			for ( auto s_cand = (send -> second).begin(); s_cand != (send -> second).end(); s_cand++ ){
 
-				std::vector<int> sEval = (*s_cand) -> rangeEvaluation;
+				std::vector<Numerical> sEval_n = (*s_cand) -> rangeEvaluation;
+				std::vector<int> sEval;
+		
+				//check types
+				for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
+								
 
 				//check each value against its set expression
 				bool allPassed = true;
@@ -134,7 +145,12 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added sends to added receives
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		std::vector<int> sEval = (*addedSend) -> rangeEvaluation;
+		std::vector<Numerical> sEval_n = (*addedSend) -> rangeEvaluation;
+		std::vector<int> sEval;
+		
+		//check types
+		for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
+
 
 		for ( auto r_cand = _receiveToAdd.begin(); r_cand != _receiveToAdd.end(); r_cand++ ){
 
@@ -256,6 +272,16 @@ void HandshakeChannel::addSendCandidate( std::shared_ptr<Candidate> sc ){
 std::cout << "adding hs send candidate on channel: " << _channelName << std::endl;
 std::cout << "associated with sp: " << sc -> processInSystem << std::endl;
 #endif
+
+	//check parameter types
+	Block *b = sc -> actionCandidate;
+	Token *t = b -> getToken();
+	std::vector< Numerical > params = sc -> rangeEvaluation;
+	for ( unsigned int i = 0; i < params.size(); i++ ){
+
+		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+	}
+
 	_sendToAdd.push_back( sc );
 }
 
@@ -266,5 +292,15 @@ void HandshakeChannel::addReceiveCandidate( std::shared_ptr<Candidate> rc ){
 std::cout << "adding hs receive candidate on channel: " << _channelName << std::endl;
 std::cout << "associated with sp: " << rc -> processInSystem << std::endl;
 #endif
+
+	//check parameter types
+	Block *b = rc -> actionCandidate;
+	Token *t = b -> getToken();
+	std::vector< Numerical > params = rc -> rangeEvaluation;
+	for ( unsigned int i = 0; i < params.size(); i++ ){
+
+		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+	}
+
 	_receiveToAdd.push_back( rc );
 }

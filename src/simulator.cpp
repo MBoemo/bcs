@@ -102,28 +102,65 @@ void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, st
 
 	for ( auto p = parameterNames.begin(); p < parameterNames.end(); p++ ){
 
-		if ( (chosen -> parameterValues).intValues.count(*p) > 0 ){
-			ss << '\t' << *p << '\t' << (chosen -> parameterValues).intValues[*p];
-		}
-		else{
-			ss << '\t' << *p << '\t' << (chosen -> parameterValues).doubleValues[*p];
+		if ( (chosen -> parameterValues).values.count(*p) > 0 ){
+	
+			Numerical val = (chosen -> parameterValues).values[*p];
+
+			if (val.isInt()) ss << '\t' << *p << '\t' << val.getInt();
+			else ss << '\t' << *p << '\t' << val.getDouble();
 		}
 	}
 	ss << std::endl;
 }
 
 
-bool System::variableIsDefined(std::string varName, ParameterValues currentParameters, std::map< std::string, double > &localVariables){
+//for debugging
+void System::printTransition(double time, std::shared_ptr<Candidate> chosen){
 
-	bool inGlobal =  _globalVars.doubleValues.count(varName) > 0 or _globalVars.intValues.count(varName) > 0;
-	bool inParams =  currentParameters.doubleValues.count(varName) > 0 or currentParameters.intValues.count(varName) > 0;
+	Block *actionDone = chosen -> actionCandidate;
+	std::vector< std::string > parameterNames = _name2ProcessDef[ actionDone -> getOwningProcess()].parameters;
+
+	if ( actionDone -> identify() == "Action" ){
+
+		ActionBlock *ab = dynamic_cast< ActionBlock * >( actionDone );
+		std::cout << time << '\t' << ab -> actionName << '\t' << actionDone -> getOwningProcess();
+	}
+	else if ( actionDone -> identify() == "MessageSend" ){
+
+		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( actionDone );
+		std::cout << time << '\t' << writeChannelName(msb -> getChannelName()) << '\t' << actionDone -> getOwningProcess();
+	}
+	else if ( actionDone -> identify() == "MessageReceive" ){
+
+		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( actionDone );
+		std::cout << time << '\t' << writeChannelName(mrb -> getChannelName())  << '\t' << actionDone -> getOwningProcess();
+	}
+
+	for ( auto p = parameterNames.begin(); p < parameterNames.end(); p++ ){
+
+		if ( (chosen -> parameterValues).values.count(*p) > 0 ){
+	
+			Numerical val = (chosen -> parameterValues).values[*p];
+
+			if (val.isInt()) std::cout << '\t' << *p << '\t' << val.getInt();
+			else std::cout << '\t' << *p << '\t' << val.getDouble();
+		}
+	}
+	std::cout << std::endl;
+}
+
+
+bool System::variableIsDefined(std::string varName, ParameterValues &currentParameters, std::map< std::string, Numerical > &localVariables){
+
+	bool inGlobal =  _globalVars.values.count(varName) > 0;
+	bool inParams =  currentParameters.values.count(varName) > 0;
 	bool inLocal = localVariables.count(varName) > 0;
 	if (not inGlobal and not inParams and not inLocal) return false;
 	else return true;
 }
 
 
-std::vector< std::string > System::substituteChannelName( std::vector< std::vector< Token * > > channelExpressions, ParameterValues currentParameters, std::map< std::string, double > &localVariables ){
+std::vector< std::string > System::substituteChannelName( std::vector< std::vector< Token * > > channelExpressions, ParameterValues &currentParameters, std::map< std::string, Numerical > &localVariables ){
 
 	std::vector< std::string > channelName;
 
@@ -136,8 +173,9 @@ std::vector< std::string > System::substituteChannelName( std::vector< std::vect
 
 		else{ //this is an expression or variable that should be substituted
 		
-			double evalIdx = evalRPN_double(*exp, currentParameters, _globalVars, localVariables);
-			channelName.push_back( std::to_string(evalIdx) );
+			Numerical evalIdx = evalRPN_numerical(*exp, currentParameters, _globalVars, localVariables);
+			if (evalIdx.isDouble()) throw WrongType((*exp)[0], "Channel name expressions must evaluate to ints, not doubles (either through explicit or implicit casting).");
+			channelName.push_back( std::to_string(evalIdx.getInt()) );
 		}
 	}
 	return channelName;
@@ -148,17 +186,17 @@ void System::sumTransitionRates( SystemProcess *sp,
 			 Tree<Block> &bt,
 			 Block *current,
 			 std::list< SystemProcess > parallelProcesses,
-			 ParameterValues currentParameters ){
+			 ParameterValues &currentParameters ){
 
 	if ( current -> identify() == "Action" ){
 
-		double rate = evalRPN_double( current -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-		if ( rate <= 0 ) throw BadRate( current -> getToken() );
+		Numerical rate = evalRPN_numerical( current -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+		if ( rate.doubleCast() <= 0 ) throw BadRate( current -> getToken() );
 		std::shared_ptr<Candidate> cand( new Candidate( current, currentParameters, sp -> localVariables, sp, parallelProcesses ) );
-		cand -> rate = rate;
+		cand -> rate = rate.doubleCast();
 		_nonMsgCandidates[sp].push_back( cand );
 		_candidatesLeft++;
-		_rateSum += rate;
+		_rateSum += rate.doubleCast();
 	}
 	else if ( current -> identify() == "MessageSend" ){
 
@@ -167,18 +205,18 @@ void System::sumTransitionRates( SystemProcess *sp,
 
 		if ( msb -> isHandshake() ){
 
-			double rate = evalRPN_double( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-			if ( rate <= 0 ) throw BadRate( current -> getToken() );
+			Numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+			if ( rate.doubleCast() <= 0 ) throw BadRate( current -> getToken() );
 
 			std::shared_ptr< Candidate > cand( new Candidate( msb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 
-			cand -> rate = rate;
+			cand -> rate = rate.doubleCast();
 
 			//evaluate each parameter expression
 			std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
 			for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
-				int paramEval = evalRPN_int( *exp, currentParameters, _globalVars, sp -> localVariables );
+				Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
 				(cand -> rangeEvaluation).push_back(paramEval);
 			}
 
@@ -224,19 +262,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 				_handshakes_Name2Channel[channelName] -> addReceiveCandidate(cand);
 			}
 		}
-		else if ( mrb -> isCheck() ){
-
-			if ( _beacons_Name2Channel.find( channelName ) != _beacons_Name2Channel.end() ){
-
-				_beacons_Name2Channel[channelName] -> addCandidate( current, sp, parallelProcesses, currentParameters, _candidatesLeft, _rateSum );
-			}
-			else{
-				std::shared_ptr< BeaconChannel > newChannel( new BeaconChannel(channelName, _globalVars) );
-				_beacons_Name2Channel[channelName] = newChannel;
-				_beacons_Name2Channel[channelName] -> addCandidate( current, sp, parallelProcesses, currentParameters, _candidatesLeft, _rateSum );
-			}
-		}
-		else{//beacon receive
+		else{//beacon receive or beacon check
 
 			if ( _beacons_Name2Channel.find( channelName ) != _beacons_Name2Channel.end() ){
 
@@ -270,15 +296,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 		std::vector< std::string > parameterNames = _name2ProcessDef[ pb -> getProcessName()].parameters;
 		for ( unsigned int i = 0; i < parameterNames.size(); i++ ){
 
-			//check literals, parameter values, and global variables in the expression to see if we should cast this to a double
-			if ( castToDouble(pb -> getParameterExpressions()[i], _globalVars, oldParameterValues ) ){
-
-				currentParameters.updateValue( parameterNames[i], evalRPN_double(pb -> getParameterExpressions()[i], oldParameterValues , _globalVars, sp -> localVariables) );
-			}
-			else{
-
-				currentParameters.updateValue( parameterNames[i], evalRPN_int(pb -> getParameterExpressions()[i], oldParameterValues , _globalVars, sp -> localVariables) );
-			}
+			currentParameters.updateValue( parameterNames[i], evalRPN_numerical(pb -> getParameterExpressions()[i], oldParameterValues , _globalVars, sp -> localVariables) );
 		}
 		//recurse down using this process's tree and the updated parameter values
 		Tree<Block> newTree = _name2ProcessDef[ pb -> getProcessName()].parseTree;
@@ -403,7 +421,7 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove ){
 	//reshuffle potential vs active beacon receives
 	for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
 
-		(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum, candToRemove -> parameterValues);
+		(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
 	}
 
 	//remove the system process from the system
@@ -464,6 +482,9 @@ std::cout << " at rate " << (*tc) -> rate << std::endl;
 					SystemProcess *newSp = updateSpForTransition( *tc );
 					if ( newSp ) toAdd.push_back(newSp);
 					writeTransition( _totalTime, *tc, _outputStream );
+#if DEBUG
+printTransition(_totalTime, *tc);
+#endif
 					removeChosenFromSystem(*tc);
 					found = true;
 					goto foundCand;
@@ -505,6 +526,9 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 
 				if ( newSp ) toAdd.push_back(newSp);
 				writeTransition( _totalTime, beaconCand, _outputStream );
+#if DEBUG
+printTransition(_totalTime, beaconCand);
+#endif
 				removeChosenFromSystem(beaconCand);
 				found = true;
 				goto foundCand;
@@ -539,6 +563,7 @@ std::cout << " at rate " << hsCand -> rate << std::endl;
 				SystemProcess *newSp_receive = updateSpForTransition( hsCand -> hsReceiveCand );
 
 				if ( newSp_receive ){
+
 					//bind a new variable if applicable
 					MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (hsCand -> hsReceiveCand) -> actionCandidate );
 					if ( mrb -> bindsVariable() ){
@@ -547,7 +572,9 @@ std::cout << " at rate " << hsCand -> rate << std::endl;
 						std::vector< int > receivedParams = hsCand -> getReceivedParam();
 						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
 
-							newSp_receive -> localVariables[ bindingVars[i] ] = receivedParams[i];
+							Numerical  n;
+							n.setInt(receivedParams[i]);
+							newSp_receive -> localVariables[ bindingVars[i] ] = n;
 						}
 					}
 					toAdd.push_back(newSp_receive);
@@ -555,9 +582,12 @@ std::cout << " at rate " << hsCand -> rate << std::endl;
 
 				writeTransition( _totalTime, hsCand -> hsSendCand, _outputStream );
 				writeTransition( _totalTime, hsCand -> hsReceiveCand, _outputStream );
-
+#if DEBUG
+printTransition(_totalTime, hsCand -> hsSendCand);
+printTransition(_totalTime, hsCand -> hsReceiveCand);
+#endif
 				//remove handshake from the system
-				removeChosenFromSystem( hsCand -> hsSendCand );
+				removeChosenFromSystem( hsCand -> hsSendCand ); //problem here
 				removeChosenFromSystem( hsCand -> hsReceiveCand );
 
 				found = true;
@@ -575,7 +605,7 @@ std::cout << "   Reformatting system... ";
 
 		//re-format the system
 		std::list< SystemProcess * > newProcesses;
-		for ( auto s = toAdd.begin(); s != toAdd.end(); s++ ){
+		for ( auto s = toAdd.begin(); s != toAdd.end(); ){
 
 			//see if we can make multiple system processes out of this one by splitting on parallel operators
 			if ( ( (*s) -> parseTree).getRoot() -> identify() == "Parallel" ){				
@@ -584,6 +614,7 @@ std::cout << "   Reformatting system... ";
 				delete *s;
 				s = _currentProcesses.erase( s );
 			}
+			else s++;
 		}
 		toAdd.insert( toAdd.end(), newProcesses.begin(), newProcesses.end() );
 

@@ -90,7 +90,7 @@ std::cout << "Starting ActionBlock parsing on: " << t -> value() << std::endl;
 	actionName = tokenisedName[0] -> value();
 
 	/*get the rate tokens and make a parse tree on arithmetic operations */
-	std::string rateSubstr = wholeAction.substr(wholeAction.rfind(",")+1, wholeAction.find("}") - wholeAction.rfind(",") - 1);
+	std::string rateSubstr = wholeAction.substr(wholeAction.find(",")+1, wholeAction.find("}") - wholeAction.find(",") - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
 	_RPNrate = shuntingYard( tokenisedRate );
 
@@ -215,7 +215,7 @@ for ( auto exp = _RPNexpressions.begin(); exp < _RPNexpressions.end(); exp++ ){
 #endif
 		
 	//get the rate tokens and make a parse tree on arithmetic operations
-	std::string rateSubstr = wholeMessage.substr(wholeMessage.rfind(",")+1, wholeMessage.find("}") - wholeMessage.rfind(",") - 1);
+	std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",",wholeMessage.find(']'))+1, wholeMessage.find("}") - wholeMessage.find(",",wholeMessage.find(']')) - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
 	_RPNrate = shuntingYard( tokenisedRate );
 
@@ -298,24 +298,36 @@ for ( auto exp = _RPNexpressions.begin(); exp < _RPNexpressions.end(); exp++ ){
 }
 #endif
 
-	//get the rate tokens and make a parse tree on arithmetic operations
-	std::string rateSubstr = wholeMessage.substr(wholeMessage.rfind(",")+1, wholeMessage.find("}") - wholeMessage.rfind(",") - 1);
-	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
-	_RPNrate = shuntingYard( tokenisedRate );
+	//check if we bind a variable
+	std::string betweenCurlyBrackets = wholeMessage.substr( wholeMessage.find("{") + 1, wholeMessage.find("}") - wholeMessage.find("{") - 1 );
+	std::vector< Token * > tokenisedWholeMessage = scanLine( betweenCurlyBrackets, t -> getLine(), t -> getColumn() );
+	bool foundLeft = false;
+	std::vector< Token * > tokenisedRate, tokenisedBinding;
+	for (auto t = tokenisedWholeMessage.begin(); t < tokenisedWholeMessage.end(); t++){
 
-
+		if ( (*t) -> identify() == "ParameterCondition" ){
+			t++;
+			if ( (*t) -> value() == "(" ){
+				_hasBindingVar = true;
+				foundLeft = true;
+				tokenisedBinding.push_back(*t);
+			}
+		}
+		else if (foundLeft and (*t) -> value() == ")" and (*(t+1)) -> value() == ","){
+			tokenisedBinding.push_back(*t);
+			t += 2;
+			tokenisedRate.insert(tokenisedRate.end(),t,tokenisedWholeMessage.end());
+			break;
+		}
+		else if (foundLeft) tokenisedBinding.push_back(*t);	
+	}
+		
 #if DEBUG
-std::cout << "Tokenised rate in RPN: ";
-for ( auto t = _RPNrate.begin(); t < _RPNrate.end(); t++ ) std::cout << (*t) -> value() << " ";
-std::cout << std::endl;
+std::cout << "Binds variable? " << _hasBindingVar << std::endl;
 #endif
 
-	/*get binding variable, if any */
-	std::string afterSquareBrackets = wholeMessage.substr( wholeMessage.find("]") + 1, wholeMessage.rfind(",") - wholeMessage.find("]") - 1 );
-	std::vector< Token * > tokenisedBinding = scanLine( afterSquareBrackets, t -> getLine(), t -> getColumn() );
-	if ( tokenisedBinding.size() > 0 ){
-
-		_hasBindingVar = true;
+	//parse the binding variables if there are any
+	if (_hasBindingVar){
 
 		if ( (tokenisedBinding[0] -> value()) != "(" or (tokenisedBinding.back() -> value()) != ")"){
 
@@ -348,7 +360,23 @@ std::cout << "Binding variable token: " << tokenisedBinding[i] -> value() << std
 
 			throw SyntaxError( t, "Binding variables must be a comma-separated list of variables.");	
 		}
+
+		//if we bind a variable, we alreayd figured out what the tokenised rate is above
+		_RPNrate = shuntingYard( tokenisedRate );
 	}
+	else{//if no binding variable, parse the rate the same way we would for a send
+
+		//get the rate tokens and make a parse tree on arithmetic operations
+		std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",",wholeMessage.find(']'))+1, wholeMessage.find("}") - wholeMessage.find(",",wholeMessage.find(']')) - 1);
+		tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
+		_RPNrate = shuntingYard( tokenisedRate );
+	}
+
+#if DEBUG
+std::cout << "Tokenised rate in RPN: ";
+for ( auto t = _RPNrate.begin(); t < _RPNrate.end(); t++ ) std::cout << (*t) -> value() << " ";
+std::cout << std::endl;
+#endif
 }
 
 
@@ -475,8 +503,8 @@ void secondParseSystemLine( std::vector< Token * > &tokenisedSL, std::list< Syst
 
 					std::vector< Token * > parsedIntlExp = shuntingYard( split_tokenisedParam[i] );
 					ParameterValues ParameterValues_dummy;
-					std::map< std::string, double > localVariables_dummy;
-					double intlValue = evalRPN_double(parsedIntlExp, ParameterValues_dummy, globalVars, localVariables_dummy);
+					std::map< std::string, Numerical > localVariables_dummy;
+					Numerical intlValue = evalRPN_numerical(parsedIntlExp, ParameterValues_dummy, globalVars, localVariables_dummy);
 					pValues.updateValue(parameterVar[i], intlValue);
 				}
 				sp.parameterValues = pValues;
@@ -495,12 +523,10 @@ std::cout << "Process name: " << processName << std::endl;
 std::cout << "copies: " << multiplier << std::endl << "parse tree:" << std::endl;
 printBlockTree( sp.parseTree, sp.parseTree.getRoot() );
 std::cout << "ints:" << std::endl;
-for (auto param = sp.parameterValues.intValues.begin(); param != sp.parameterValues.intValues.end(); param++ ){
-	std::cout << param -> first << " " << param -> second << std::endl;
-}
-std::cout << "doubles:" << std::endl;
-for (auto param = sp.parameterValues.doubleValues.begin(); param != sp.parameterValues.doubleValues.end(); param++ ){
-	std::cout << param -> first << " " << param -> second << std::endl;
+for (auto param = sp.parameterValues.values.begin(); param != sp.parameterValues.values.end(); param++ ){
+	
+	if ( (param -> second).isDouble() ) std::cout << param -> first << " " << (param -> second).getDouble() << " double" << std::endl;
+	if ( (param -> second).isInt() ) std::cout << param -> first << " " << (param -> second).getInt() << " int" << std::endl;
 }
 #endif
 			multiplier = 1;
@@ -511,11 +537,16 @@ for (auto param = sp.parameterValues.doubleValues.begin(); param != sp.parameter
 			
 			if ( (*t) -> identify() == "Variable" ){
 
-				if ( globalVars.doubleValues.count(str_multiplier) == 0 and globalVars.intValues.count(str_multiplier) == 0 ) throw UndefinedVariable( *t );
-				if ( globalVars.doubleValues.count(str_multiplier) > 0 ) throw SyntaxError( *t, "Thrown by block parser: System process multiplier must be an int, not a float.");
-				multiplier = globalVars.intValues.at( str_multiplier );
+				if ( globalVars.values.count(str_multiplier) == 0 ) throw UndefinedVariable( *t );
+				Numerical multiplier_n = globalVars.values.at(str_multiplier);
+				if (multiplier_n.isDouble()) throw SyntaxError( *t, "Thrown by block parser: System process multiplier must be an int, not a float.");
+				multiplier = multiplier_n.getInt();
 			}
-			else multiplier = std::stoi(str_multiplier);
+			else{
+
+				multiplier = std::stoi(str_multiplier);
+			}
+
 
 			if ( multiplier <= 0 ) throw SyntaxError(*t, "Thrown by block parser: System process multiplier must be greater than zero.");
 		}

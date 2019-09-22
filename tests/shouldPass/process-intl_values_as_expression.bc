@@ -5,7 +5,7 @@
 // -we can specify the initial value of parameters as expressions of global variables
 
 //global variables
-gv1 = 5.0;
+gv1 = 5;
 gv2 = 10;
 
 //definitions

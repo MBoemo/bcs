@@ -1,0 +1,16 @@
+//EXPECTED BEHAVIOUR:
+//Beacon is launched by proc, which is not then received by proc because the parameter in the beacon check match the beacon launch
+//longAction should happen on a much longer timescale than the short actions
+
+//WHAT IT TESTS:
+// -arithmetic and boolean operations in gates
+// -complex arithmetic for beacon parameters
+// -basic beacon functionality
+
+//process definitions
+proc1[ j ] = [ (j == 3) | (j == 1) ] ->  {msg![2 - 5*5*(j - 2)], 1}.{~msg?[2 - 5*5*(j - 2)], 1}.{beaconCheckReceived,1};
+
+//system line
+proc1[3];
+
+//255*j2neg-*-20..

@@ -8,6 +8,7 @@
 
 //#define DEBUG_RPN 1
 //#define DEBUG_GRAMMAR 1
+//#define DEBUG_SETS 1
 
 #include "evaluate_trees.h"
 #include <cmath>
@@ -17,15 +18,15 @@
 #include <algorithm>
 
 
-bool castToDouble( std::vector<Token * > expression, GlobalVariables gv, ParameterValues pv ){
+bool castToDouble( std::vector<Token * > expression, GlobalVariables &gv, ParameterValues &pv ){
 
 	for ( auto t = expression.begin(); t < expression.end(); t++ ){
 
 		if ( (*t) -> identify() == "DoubleLiteral" ) return true;
 		if ( (*t) -> identify() == "Variable" ){
 
-			if (gv.doubleValues.count((*t) -> value()) > 0) return true;
-			if (pv.doubleValues.count((*t) -> value()) > 0) return true;
+			if (gv.values.count((*t) -> value()) > 0) return true;
+			if (pv.values.count((*t) -> value()) > 0) return true;
 		}
 	}
 	return false;
@@ -406,7 +407,7 @@ std::cout << "Whole expression in RPN: ";
 }
 
 
-inline Numerical substituteVariable( Token *t, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables ){
+inline Numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
 	Numerical out;
@@ -429,28 +430,20 @@ inline Numerical substituteVariable( Token *t, ParameterValues param2value, Glob
 
 			return localVariables[ t -> value() ];
 		}
-		else if ( globalVariables.intValues.count( t -> value() ) > 0 ){
+		else if ( globalVariables.values.count( t -> value() ) > 0 ){
 
-			return globalVariables.intValues[ t -> value() ];
+			return globalVariables.values[ t -> value() ];
 		}
-		else if ( globalVariables.doubleValues.count( t -> value() ) > 0 ){
+		else if ( param2value.values.count( t -> value() ) > 0 ){
 
-			return globalVariables.doubleValues[ t -> value() ];
-		}
-		else if ( param2value.intValues.count( t -> value() ) > 0 ){
-
-			return param2value.intValues[ t -> value() ];
-		}
-		else if ( param2value.doubleValues.count( t -> value() ) > 0 ){
-
-			return param2value.doubleValues[ t -> value() ];
+			return param2value.values[ t -> value() ];
 		}
 		else throw UndefinedVariable( t );
 	}
 }
 
 
-inline bool variableIsDefined( Token *t, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables ){
+inline bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
 	assert( t -> identify() == "Variable" );
@@ -458,19 +451,11 @@ inline bool variableIsDefined( Token *t, ParameterValues param2value, GlobalVari
 
 		return true;
 	}
-	else if ( globalVariables.intValues.count( t -> value() ) > 0 ){
+	else if ( globalVariables.values.count( t -> value() ) > 0 ){
 
 		return true;
 	}
-	else if ( globalVariables.doubleValues.count( t -> value() ) > 0 ){
-
-		return true;
-	}
-	else if ( param2value.intValues.count( t -> value() ) > 0 ){
-
-		return true;
-	}
-	else if ( param2value.doubleValues.count( t -> value() ) > 0 ){
+	else if ( param2value.values.count( t -> value() ) > 0 ){
 
 		return true;
 	}
@@ -478,7 +463,7 @@ inline bool variableIsDefined( Token *t, ParameterValues param2value, GlobalVari
 }
 
 
-Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables){
+Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 	std::stack<RPNoperand *> evalStack;	
 
@@ -527,9 +512,9 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues pa
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
-				op1_n = intptr -> getValue();
+				op1_n = numptr -> getValue();
 				numptr = dynamic_cast<NumericalOperand *>(operand2);
-				op2_n = intptr -> getValue();
+				op2_n = numptr -> getValue();
 
 				//upcast
 				bool upcast = false;
@@ -538,36 +523,36 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues pa
 				Numerical result;
 				if ( (*t) -> value() == "+" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() + op1_n.doubleCast() );
+					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
 					else result.setInt( op1_n.getInt() + op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "-" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() - op1_n.doubleCast() );
+					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
 					else result.setInt( op1_n.getInt() - op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "/" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() / op1_n.doubleCast() );
+					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
 					else result.setInt( op1_n.getInt() / op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "*" ){
-					if (upcast) result.setDouble( op1_n.doubleCast() * op1_n.doubleCast() );
+					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
 					else result.setInt( op1_n.getInt() * op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "^" ){
 
-					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op1_n.doubleCast()) );
+					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
 					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "min" ){
 
-					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op1_n.doubleCast()) );
+					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
 					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "max" ){
 
-					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op1_n.doubleCast()) );
+					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
 					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
@@ -580,7 +565,7 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues pa
 		else if ( isOperand(*t) ){
 
 			//check types
-			if ((*t) -> identify() == "DoubleLiteral" or (*t) -> identify() == "IntLiteral" or (*t) -> identify() == "Variable"){
+			if ((*t) -> identify() != "DoubleLiteral" and (*t) -> identify() != "IntLiteral" and (*t) -> identify() != "Variable"){
 
 				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
 			}			
@@ -604,8 +589,8 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues pa
 	return result;
 }
 
-/*
-int evalRPN_int( std::vector< Token * > inputRPN, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables){
+
+bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 	std::stack<RPNoperand *> evalStack;	
 
@@ -618,22 +603,28 @@ int evalRPN_int( std::vector< Token * > inputRPN, ParameterValues param2value, G
 				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
-				if (operand -> identify() != "Int") throw WrongType(*t,operand -> identify());
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand);
-				int op_i = intptr -> getValue();
-				int result;
+				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				Numerical op_n = numptr -> getValue();
+				Numerical result;
 				if ( (*t) -> value() == "abs" ){
-					result = std::abs(op_i);
+
+					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
+					else result.setDouble(std::abs(op_n.getDouble()));
 				}
 				else if ( (*t) -> value() == "sqrt" ){
-					result = sqrt(op_i);
+
+					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
+					else result.setDouble(sqrt(op_n.getDouble()));
 				}
 				else if ( (*t) -> value() == "neg" ){
-					result = -op_i;
+
+					if (op_n.isInt()) result.setInt(-op_n.getInt());
+					else result.setDouble(-op_n.getDouble());
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
 
-				evalStack.push( new IntOperand(result) );
+				evalStack.push( new NumericalOperand(result) );
 				delete operand;
 			}
 			else if ( (*t) -> value() == "min" or (*t) -> value() == "max" or (*t) -> value() == "+" or (*t) -> value() == "-" or (*t) -> value() == "*" or (*t) -> value() == "/" or (*t) -> value() == "^"){
@@ -644,242 +635,56 @@ int evalRPN_int( std::vector< Token * > inputRPN, ParameterValues param2value, G
 				evalStack.pop();
 				RPNoperand *operand1 = evalStack.top();
 				evalStack.pop();
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand1 -> identify());
-				if (operand2 -> identify() != "Int") throw WrongType(*t,operand2 -> identify());
-				int op1_d,op2_d;
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-				op1_d = intptr -> getValue();
-				intptr = dynamic_cast<IntOperand *>(operand2);
-				op2_d = intptr -> getValue();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
 
-				int result;
+				//upcast
+				bool upcast = false;
+				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
+
+				Numerical result;
 				if ( (*t) -> value() == "+" ){
-					result = op1_d + op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() + op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "-" ){
-					result = op1_d - op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() - op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "/" ){
-					result = op1_d / op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() / op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "*" ){
-					result = op1_d * op2_d;
+					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() * op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "^" ){
-					result = pow(op1_d, op2_d);
+
+					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "min" ){
-					result = std::min(op1_d, op2_d);
+
+					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "max" ){
-					result = std::max(op1_d, op2_d);
+
+					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
 
-				evalStack.push( new IntOperand(result) );
-				delete operand1; delete operand2;
-			}
-
-		}
-		else if ( isOperand(*t) ){
-
-			//check for casting issues
-			if ( (*t) -> identify() == "DoubleLiteral" ) throw WrongType(*t, "Operands in gate, message, and set expressions must be ints.");
-			if ( (*t) -> identify() == "Variable" ){
-
-				if ( globalVariables.doubleValues.count((*t) -> value()) > 0 or param2value.doubleValues.count((*t) -> value()) > 0 ){
-
-					throw WrongType(*t, "Operands in gate, message, and set expressions must be ints.");
-				}
-			}
-
-			int result = substituteVariable( *t, param2value, globalVariables, localVariables );
-			evalStack.push( new IntOperand(result) );
-		}
-	}
-
-	if ( evalStack.top() -> identify() != "Int" ) throw SyntaxError( inputRPN[0], "Message send expression must evaluate to an int." );
-
-	IntOperand *intptr = dynamic_cast<IntOperand *>(evalStack.top());
-	int result = intptr -> getValue();
-	delete evalStack.top();
-
-#if DEBUG_RPN
-	std::cout << "Int is: " << result << std::endl;
-#endif
-	return result;
-}
-
-
-double evalRPN_double( std::vector< Token * > inputRPN, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables){
-
-	std::stack<RPNoperand *> evalStack;	
-
-	for ( auto t = inputRPN.begin(); t < inputRPN.end(); t++ ){
-
-		if ( isOperator(*t) or (*t) -> identify() == "Function"){
-
-			if ( (*t) -> value() == "abs" or (*t) -> value() == "sqrt" or (*t)->value() == "neg" ){
-
-				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
-				RPNoperand *operand = evalStack.top();
-				evalStack.pop();
-				if (operand -> identify() != "Double") throw WrongType(*t,operand -> identify());
-				DoubleOperand *intptr = dynamic_cast<DoubleOperand *>(operand);
-				double op_d = intptr -> getValue();
-				double result;
-				if ( (*t) -> value() == "abs" ){
-					result = std::abs(op_d);
-				}
-				else if ( (*t) -> value() == "sqrt" ){
-					result = sqrt(op_d);
-				}
-				else if ( (*t) -> value() == "neg" ){
-					result = -op_d;
-				}
-				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
-
-				evalStack.push( new DoubleOperand(result) );
-				delete operand;
-			}
-			else if ( (*t) -> value() == "min" or (*t) -> value() == "max" or (*t) -> value() == "+" or (*t) -> value() == "-" or (*t) -> value() == "*" or (*t) -> value() == "/" or (*t) -> value() == "^"){
-
-				//get the operands and make sure they're of correct type for the operator
-				if ( evalStack.size() <= 1 ) throw SyntaxError(*t, "Insufficient arguments.");
-				RPNoperand *operand2 = evalStack.top();
-				evalStack.pop();
-				RPNoperand *operand1 = evalStack.top();
-				evalStack.pop();
-				if (operand1 -> identify() != "Double") throw WrongType(*t,operand1 -> identify());
-				if (operand2 -> identify() != "Double") throw WrongType(*t,operand2 -> identify());
-				double op1_d,op2_d;
-				DoubleOperand *doubleptr = dynamic_cast<DoubleOperand *>(operand1);
-				op1_d = doubleptr -> getValue();
-				doubleptr = dynamic_cast<DoubleOperand *>(operand2);
-				op2_d = doubleptr -> getValue();
-
-				double result;
-				if ( (*t) -> value() == "+" ){
-					result = op1_d + op2_d;
-				}
-				else if ( (*t) -> value() == "-" ){
-					result = op1_d - op2_d;
-				}
-				else if ( (*t) -> value() == "/" ){
-					result = op1_d / op2_d;
-				}
-				else if ( (*t) -> value() == "*" ){
-					result = op1_d * op2_d;
-				}
-				else if ( (*t) -> value() == "^" ){
-					result = pow(op1_d, op2_d);
-				}
-				else if ( (*t) -> value() == "min" ){
-					result = std::min(op1_d, op2_d);
-				}
-				else if ( (*t) -> value() == "max" ){
-					result = std::max(op1_d, op2_d);
-				}
-				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
-
-				evalStack.push( new DoubleOperand(result) );
-				delete operand1; delete operand2;
-			}
-		}
-		else if ( isOperand(*t) ){
-
-			double result = substituteVariable( *t, param2value, globalVariables, localVariables );
-			evalStack.push( new DoubleOperand(result) );
-		}
-	}
-
-	if ( evalStack.top() -> identify() != "Double" ) throw SyntaxError( inputRPN[0], "Rate expression must evaluate to a double." );
-
-	double result;
-	DoubleOperand *douptr = dynamic_cast<DoubleOperand *>(evalStack.top());
-	result = douptr -> getValue();
-	delete evalStack.top();
-
-#if DEBUG_RPN
-	std::cout << "Double is: " << result << std::endl;
-#endif
-	return result;
-}
-*/
-
-
-bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables){
-
-	std::stack<RPNoperand *> evalStack;	
-
-	for ( auto t = inputRPN.begin(); t < inputRPN.end(); t++ ){
-
-		if ( isOperator(*t) or (*t) -> identify() == "Function"){
-
-			if ( (*t) -> value() == "abs" or (*t) -> value() == "sqrt" or (*t) -> value() == "neg" ){
-
-				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
-				RPNoperand *operand = evalStack.top();
-				evalStack.pop();
-				if (operand -> identify() != "Int") throw WrongType(*t,operand -> identify());
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand);
-				int op_d = intptr -> getValue();
-				int result;
-				if ( (*t) -> value() == "abs" ){
-					result = std::abs(op_d);
-				}
-				else if ( (*t) -> value() == "sqrt" ){
-					result = sqrt(op_d);
-				}
-				else if ( (*t) -> value() == "neg" ){
-					result = -op_d;
-				}
-				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
-
-				evalStack.push( new IntOperand(result) );
-				delete operand;
-			}
-			else if ( (*t) -> value() == "min" or (*t) -> value() == "max" or (*t) -> value() == "+" or (*t) -> value() == "-" or (*t) -> value() == "*" or (*t) -> value() == "/" or (*t) -> value() == "^"){
-
-				//get the operands and make sure they're of correct type for the operator
-				if ( evalStack.size() <= 1 ) throw SyntaxError(*t, "Insufficient arguments.");
-				RPNoperand *operand2 = evalStack.top();
-				evalStack.pop();
-				RPNoperand *operand1 = evalStack.top();
-				evalStack.pop();
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand1 -> identify());
-				if (operand2 -> identify() != "Int") throw WrongType(*t,operand2 -> identify());
-				int op1_d,op2_d;
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-				op1_d = intptr -> getValue();
-				intptr = dynamic_cast<IntOperand *>(operand2);
-				op2_d = intptr -> getValue();
-
-				int result;
-				if ( (*t) -> value() == "+" ){
-					result = op1_d + op2_d;
-				}
-				else if ( (*t) -> value() == "-" ){
-					result = op1_d - op2_d;
-				}
-				else if ( (*t) -> value() == "/" ){
-					result = op1_d / op2_d;
-				}
-				else if ( (*t) -> value() == "*" ){
-					result = op1_d * op2_d;
-				}
-				else if ( (*t) -> value() == "^" ){
-					result = pow(op1_d, op2_d);
-				}
-				else if ( (*t) -> value() == "min" ){
-					result = std::min(op1_d, op2_d);
-				}
-				else if ( (*t) -> value() == "max" ){
-					result = std::max(op1_d, op2_d);
-				}
-				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
-
-				evalStack.push( new IntOperand(result) );
+				evalStack.push( new NumericalOperand(result) );
 				delete operand1; delete operand2;
 			}
 			else if ( (*t) -> value() == "==" or (*t) -> value() == "!=" or (*t) -> value() == ">" or (*t) -> value() == "<" or (*t) -> value() == ">=" or (*t) -> value() == "<=" ){
@@ -890,32 +695,32 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues param2v
 				evalStack.pop();
 				RPNoperand *operand1 = evalStack.top();
 				evalStack.pop();
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand1 -> identify());
-				if (operand2 -> identify() != "Int") throw WrongType(*t,operand2 -> identify());
-				int op1_d,op2_d;
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-				op1_d = intptr -> getValue();
-				intptr = dynamic_cast<IntOperand *>(operand2);
-				op2_d = intptr -> getValue();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
 
 				bool result;
 				if ( (*t) -> value() == "==" ){
-					result = op1_d == op2_d;
+					result = op1_n.doubleCast() == op2_n.doubleCast();
 				}
 				else if ( (*t) -> value() == "!=" ){
-					result = op1_d != op2_d;
+					result = op1_n.doubleCast() != op2_n.doubleCast();
 				}
 				else if ( (*t) -> value() == ">" ){
-					result = op1_d > op2_d;
+					result = op1_n.doubleCast() > op2_n.doubleCast();
 				}
 				else if ( (*t) -> value() == "<" ){
-					result = op1_d < op2_d;
+					result = op1_n.doubleCast() < op2_n.doubleCast();
 				}
 				else if ( (*t) -> value() == ">=" ){
-					result = op1_d >= op2_d;
+					result = op1_n.doubleCast() >= op2_n.doubleCast();
 				}
 				else if ( (*t) -> value() == "<=" ){
-					result = op1_d <= op2_d;
+					result = op1_n.doubleCast() <= op2_n.doubleCast();
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for comparison evaluation.");
 
@@ -954,18 +759,14 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues param2v
 		}
 		else if ( isOperand(*t) ){
 
-			//check for casting issues
-			if ( (*t) -> identify() == "DoubleLiteral" ) throw WrongType(*t, "Operands to gate conditions must be ints.");
-			if ( (*t) -> identify() == "Variable" ){
+			//check types
+			if ((*t) -> identify() != "DoubleLiteral" and (*t) -> identify() != "IntLiteral" and (*t) -> identify() != "Variable"){
 
-				if ( globalVariables.doubleValues.count((*t) -> value()) > 0 or param2value.doubleValues.count((*t) -> value()) > 0 ){
+				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
+			}			
 
-					throw WrongType(*t, "Operands to gate conditions must be ints.");
-				}
-			}
-
-			int result = substituteVariable( *t, param2value, globalVariables, localVariables );
-			evalStack.push( new IntOperand(result) );
+			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			evalStack.push( new NumericalOperand(result) );
 		}
 	}
 
@@ -984,7 +785,16 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues param2v
 }
 
 
-bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues param2value, GlobalVariables &globalVariables, std::map< std::string, double > &localVariables){
+bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+
+#if DEBUG_SETS
+std::cout << "Testing: " << toTest << std::endl;
+std::cout << "Expression is: ";
+for (auto test = inputRPN.begin(); test < inputRPN.end(); test++) std::cout << (*test) -> value();
+std::cout << std::endl;
+//std::cout << "Parameters are:" << std::endl;
+//param2value.printValues();
+#endif
 
 	std::stack<RPNoperand *> evalStack;	
 
@@ -992,27 +802,35 @@ bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues p
 
 		if ( isOperator(*t) or (*t) -> identify() == "Function"){
 
-			if ( (*t) -> value() == "abs" or (*t) -> value() == "sqrt" or (*t) ->  value() == "neg"){
+			if ( (*t) -> value() == "abs" or (*t) -> value() == "sqrt" or (*t) ->value() == "neg" ){ //unary
 
 				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
-				if (operand -> identify() != "Int") throw WrongType(*t,operand -> identify());
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand);
-				int op_d = intptr -> getValue();
-				int result;
+				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				Numerical op_n = numptr -> getValue();
+				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+
+				Numerical result;
 				if ( (*t) -> value() == "abs" ){
-					result = std::abs(op_d);
+
+					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
+					else result.setDouble(std::abs(op_n.getDouble()));
 				}
 				else if ( (*t) -> value() == "sqrt" ){
-					result = sqrt(op_d);
+
+					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
+					else result.setDouble(sqrt(op_n.getDouble()));
 				}
 				else if ( (*t) -> value() == "neg" ){
-					result = -op_d;
-				}
-				else assert(false);
 
-				evalStack.push( new IntOperand(result) );
+					if (op_n.isInt()) result.setInt(-op_n.getInt());
+					else result.setDouble(-op_n.getDouble());
+				}
+				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
+
+				evalStack.push( new NumericalOperand(result) );
 				delete operand;
 			}
 			else if ( (*t) -> value() == "min" or (*t) -> value() == "max" or (*t) -> value() == "+" or (*t) -> value() == "-" or (*t) -> value() == "*" or (*t) -> value() == "/" or (*t) -> value() == "^"){
@@ -1023,39 +841,57 @@ bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues p
 				evalStack.pop();
 				RPNoperand *operand1 = evalStack.top();
 				evalStack.pop();
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand1 -> identify());
-				if (operand2 -> identify() != "Int") throw WrongType(*t,operand2 -> identify());
-				int op1_d,op2_d;
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-				op1_d = intptr -> getValue();
-				intptr = dynamic_cast<IntOperand *>(operand2);
-				op2_d = intptr -> getValue();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
+				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				int result;
+				//upcast
+				bool upcast = false;
+				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
+
+				Numerical result;
 				if ( (*t) -> value() == "+" ){
-					result = op1_d + op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() + op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "-" ){
-					result = op1_d - op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() - op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "/" ){
-					result = op1_d / op2_d;
+
+					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() / op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "*" ){
-					result = op1_d * op2_d;
+					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() * op2_n.getInt() );
 				}
 				else if ( (*t) -> value() == "^" ){
-					result = pow(op1_d, op2_d);
+
+					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "min" ){
-					result = std::min(op1_d, op2_d);
+
+					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
 				}
 				else if ( (*t) -> value() == "max" ){
-					result = std::max(op1_d, op2_d);
-				}
-				else assert(false);
 
-				evalStack.push( new IntOperand(result) );
+					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+				}
+				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
+
+				evalStack.push( new NumericalOperand(result) );
 				delete operand1; delete operand2;
 			}
 			else if ( (*t) -> value() == ".." ){
@@ -1066,17 +902,18 @@ bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues p
 				evalStack.pop();
 				RPNoperand *operand1 = evalStack.top();
 				evalStack.pop();
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand1 -> identify());
-				if (operand1 -> identify() != "Int") throw WrongType(*t,operand2 -> identify());
-				int op1_d,op2_d;
-				IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-				op1_d = intptr -> getValue();
-				intptr = dynamic_cast<IntOperand *>(operand2);
-				op2_d = intptr -> getValue();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
+				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
 				bool result;
-				if (op1_d > op2_d ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
-				if (op1_d <= toTest and toTest <= op2_d) result = true;
+				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
+				if (op1_n.getInt() <= toTest and toTest <= op2_n.getInt()) result = true;
 				else result = false;
 
 				evalStack.push( new BoolOperand(result) );
@@ -1090,26 +927,39 @@ bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues p
 				evalStack.pop();
 				RPNoperand *operand1 = evalStack.top();
 				evalStack.pop();
-				if (operand1 -> identify() != "Int" and operand1 -> identify() != "Bool") throw WrongType(*t,operand1 -> identify());
-				if (operand1 -> identify() != "Int" and operand1 -> identify() != "Bool") throw WrongType(*t,operand2 -> identify());
+				if (operand1 -> identify() != "Numerical" and operand1 -> identify() != "Bool") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical" and operand2 -> identify() != "Bool") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
 				
 				//get everything in bool format
 				bool op1_s;
-				if (operand1 -> identify() == "Int"){
-					IntOperand *intptr = dynamic_cast<IntOperand *>(operand1);
-					op1_s = intptr -> getValue() == toTest;
+				if (operand1 -> identify() == "Numerical"){
+
+					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+					Numerical op1_n = numptr -> getValue();
+					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op1_s = op1_n.getInt() == toTest;
 				}
 				else{
+
 					BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand1);
 					op1_s = boolptr -> getValue();
 				}
 
 				bool op2_s;
-				if (operand2 -> identify() == "Int"){
-					IntOperand *intptr = dynamic_cast<IntOperand *>(operand2);
-					op2_s = intptr -> getValue() == toTest;
+				if (operand2 -> identify() == "Numerical"){
+
+					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand2);
+					Numerical op2_n = numptr -> getValue();
+					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op2_s = op2_n.getInt() == toTest;
 				}
 				else{
+
 					BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand2);
 					op2_s = boolptr -> getValue();
 				}
@@ -1132,36 +982,35 @@ bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues p
 		}
 		else if ( isOperand(*t) ){
 
-			//check for casting issues
-			if ( (*t) -> identify() == "DoubleLiteral" ) throw WrongType(*t, "Operands within message receives must be ints.");
-			if ( (*t) -> identify() == "Variable" ){
+			//check types
+			if ((*t) -> identify() != "DoubleLiteral" and (*t) -> identify() != "IntLiteral" and (*t) -> identify() != "Variable"){
 
-				if ( globalVariables.doubleValues.count((*t) -> value()) > 0 or param2value.doubleValues.count((*t) -> value()) > 0 ){
+				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
+			}			
 
-					throw WrongType(*t, "Operands within message receives must be ints.");
-				}
-			}
-
-			int result = substituteVariable( *t, param2value, globalVariables, localVariables );
-			evalStack.push( new IntOperand(result) );
+			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			evalStack.push( new NumericalOperand(result) );
 		}
 	}
 
-	if ( evalStack.top() -> identify() != "Bool" and evalStack.top() -> identify() != "Int" ) throw SyntaxError( inputRPN[0], "Message receive expression must evaluate to a bool or an int" );
+	if ( evalStack.top() -> identify() != "Bool" and evalStack.top() -> identify() != "Numerical" ) throw SyntaxError( inputRPN[0], "Message receive expression must evaluate to a bool or an int" );
 
 	bool result;
-	if ( evalStack.top() -> identify() == "Int" ){
+	if ( evalStack.top() -> identify() == "Numerical" ){
 
-		IntOperand *intptr = dynamic_cast<IntOperand *>(evalStack.top());
-		result = intptr -> getValue() == toTest;
+		NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(evalStack.top());
+		Numerical op1_n = numptr -> getValue();
+		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+		result = op1_n.doubleCast() == toTest;
 	}
 	else{
+
 		BoolOperand *boolptr = dynamic_cast<BoolOperand *>(evalStack.top());
 		result = boolptr -> getValue();
 	}
 	delete evalStack.top();
 
-#if DEBUG_RPN
+#if DEBUG_SETS
 	std::cout << "Bool is: " << result << std::endl;
 #endif
 	return result;

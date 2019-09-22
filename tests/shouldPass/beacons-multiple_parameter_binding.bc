@@ -8,7 +8,7 @@
 
 //definitions
 proc1[i, j] = {i,j![2*i+5,j*3],3}.{sentChannelBeacon,2};
-proc2[i, j] = {*4i,j-1?[0..100,0..100](x,y),0.1}.proc3[x,y];
+proc2[i, j] = {4*i,j-1?[0..100,0..100](x,y),0.1}.proc3[x,y];
 proc3[x, y] = {receivedByProc3,1};
 
 

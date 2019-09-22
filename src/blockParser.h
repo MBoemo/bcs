@@ -22,7 +22,7 @@ class Block{
 
 	protected:
 		Token * inputToken;
-		Block( Token * t, std::string &name ){ inputToken = t; }
+		Block( Token * t, std::string &name ){inputToken = t;}
 
 	public:
 		virtual Token * getToken(void) const = 0;
@@ -202,30 +202,31 @@ class Candidate;
 class ParameterValues{
 
 	public:
-		std::map< std::string, int > intValues;
-		std::map< std::string, double > doubleValues;
+		std::map< std::string, Numerical > values;
 	
 	ParameterValues(){}
 	ParameterValues( const ParameterValues &pv ){
 
-		intValues = pv.intValues;
-		doubleValues = pv.doubleValues;
+		values = pv.values;
 	}
-	void updateValue(std::string pName, double value){
+	void updateValue(std::string pName, Numerical value){
 
-		if ( intValues.count(pName) > 0 ) intValues.erase(intValues.find(pName));
-		doubleValues[pName] = value;
-	}
-	void updateValue(std::string pName, int value){
-
-		if ( doubleValues.count(pName) > 0 ) doubleValues.erase(doubleValues.find(pName));
-		intValues[pName] = value;
+		if ( values.count(pName) > 0 ) values.erase(values.find(pName));
+		values[pName] = value;
 	}
 	void printValues(){
-		std::cout << "int values:" << std::endl;
-		for ( auto i = intValues.begin(); i != intValues.end(); i++) std::cout << i -> first << " " << i -> second << std::endl;
-		std::cout << "double values:" << std::endl;
-		for ( auto i = doubleValues.begin(); i != doubleValues.end(); i++) std::cout << i -> first << " " << i -> second << std::endl;
+		std::cout << "number of values: " << values.size() << std::endl;
+		for ( auto i = values.begin(); i != values.end(); i++){
+
+			if ((i->second).isDouble()){
+
+				std::cout << i -> first << " " << (i -> second).getDouble() << " Double" << std::endl;
+			}
+			else{
+
+				std::cout << i -> first << " " << (i -> second).getInt() << " Int" << std::endl;
+			}
+		}
 	}
 };
 
@@ -234,7 +235,7 @@ class SystemProcess{
 	public:
 		Tree<Block> parseTree;
 		ParameterValues parameterValues;
-		std::map< std::string, double > localVariables; //system line variable substitutions and bound variables
+		std::map< std::string, Numerical > localVariables; //system line variable substitutions and bound variables
 		SystemProcess(){}
 		SystemProcess( const SystemProcess &sp ){
 
@@ -250,12 +251,12 @@ class Candidate{
 	public:
 		Block *actionCandidate;
 		ParameterValues parameterValues;
-		std::map< std::string, double > localVariables;
+		std::map< std::string, Numerical > localVariables;
 		SystemProcess *processInSystem;
 		double rate;
-		std::vector< int > rangeEvaluation;
+		std::vector< Numerical > rangeEvaluation;
 		std::list< SystemProcess > parallelProcesses;
-		Candidate( Block *b, ParameterValues pv, std::map< std::string, double > lv, SystemProcess *si, std::list< SystemProcess > pp ){
+		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
 			actionCandidate = b;
 			parameterValues = pv;

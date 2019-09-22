@@ -18,6 +18,7 @@
 #include <cassert>
 #include "lexer.h"
 #include "error_handling.h"
+#include "numerical.h"
 
 template <class T>
 class Tree {
@@ -166,28 +167,30 @@ class Tree {
 class GlobalVariables{
 
 	public:
-		std::map< std::string, int > intValues;
-		std::map< std::string, double > doubleValues;
+		std::map< std::string, Numerical > values;
 	
 	GlobalVariables(){}
-	GlobalVariables( const GlobalVariables &gv ){
+	GlobalVariables( const GlobalVariables &pv ){
 
-		intValues = gv.intValues;
-		doubleValues = gv.doubleValues;
+		values = pv.values;
 	}
-	void updateValue(std::string pName, double value){
+	void updateValue(std::string pName, Numerical value){
 
-		doubleValues[pName] = value;
-	}
-	void updateValue(std::string pName, int value){
-
-		intValues[pName] = value;
+		if ( values.count(pName) > 0 ) values.erase(values.find(pName));
+		values[pName] = value;
 	}
 	void printValues(){
-		std::cout << "int values:" << std::endl;
-		for ( auto i = intValues.begin(); i != intValues.end(); i++) std::cout << i -> first << " " << i -> second << std::endl;
-		std::cout << "double values:" << std::endl;
-		for ( auto i = doubleValues.begin(); i != doubleValues.end(); i++) std::cout << i -> first << " " << i -> second << std::endl;
+		for ( auto i = values.begin(); i != values.end(); i++){
+
+			if ((i->second).isDouble()){
+
+				std::cout << i -> first << " " << (i -> second).getDouble() << " Double" << std::endl;
+			}
+			else{
+
+				std::cout << i -> first << " " << (i -> second).getInt() << " Int" << std::endl;
+			}
+		}
 	}
 };
 

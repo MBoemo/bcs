@@ -12,6 +12,7 @@
 #include "blockParser.h"
 #include <set>
 
+
 class RPNoperand{
 
 	public:
@@ -46,15 +47,15 @@ class DoubleOperand: public RPNoperand {
 
 class NumericalOperand: public RPNoperand {
 
-	private
+	private:
 		Numerical _underlyingNumerical;
 
 	public:
-		NumericalOperand( Numerical in ){_underlyingNumerical = in;}
+		NumericalOperand( Numerical &in ){_underlyingNumerical = in;}
 		~NumericalOperand(){}
-		std::string identify(void) const { return "Numerical"; };
+		std::string identify(void) const {return "Numerical";}
 		Numerical getValue(void){return _underlyingNumerical;}
-}
+};
 
 class BoolOperand: public RPNoperand {
 
@@ -80,67 +81,13 @@ class SetOperand: public RPNoperand {
 		std::set<int> getValue(void){return _underlyingSet;}
 };
 
-class Numerical{
 
-	private:
-		double dVal;
-		int iVal;
-		bool isDouble = false;
-		bool isInt = false;
-	public:
-		void setDouble(double d){
-
-			assert(not isDouble and not isInt); //already set
-
-			isDouble = true;
-			isInt = false;
-			dVal = d;
-		}
-		void setInt(int i){
-
-			assert(not isDouble and not isInt); //already set
-
-			isDouble = false;
-			isInt = true;
-			iVal = i;
-		}
-		int getInt(void){
-
-			assert(isInt);
-			return iVal;
-		}
-		double getDouble(void){
-
-			assert(isDouble);
-			return dVal;
-		}
-		double doubleCast(void){
-
-			assert(not isDouble and not isInt); //already set
-			if ( isDouble.() ) return getDouble();
-			else return getInt();
-		}
-		bool isInt(void){
-
-			assert(not isDouble and not isInt); //already set
-			return isInt;
-		}
-		bool isDouble(void){
-
-			assert(not isDouble and not isInt); //already set
-			return isDouble;
-		}
-};
-
-
-//int evalRPN_int( std::vector< Token * > , ParameterValues, GlobalVariables &, std::map< std::string, double > &);
-//double evalRPN_double( std::vector< Token * > , ParameterValues, GlobalVariables &, std::map< std::string, double > &);
-Numerical evalRPN_numerical( std::vector< Token * > , ParameterValues, GlobalVariables &, std::map< std::string, double > &);
-bool evalRPN_condition( std::vector< Token * > , ParameterValues, GlobalVariables &, std::map< std::string, double > &);
-bool evalRPN_set( int, std::vector< Token * > , ParameterValues, GlobalVariables &, std::map< std::string, double > &);
+Numerical evalRPN_numerical( std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool evalRPN_condition( std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool evalRPN_set( int, std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp );
-inline double substituteVariable( Token *, ParameterValues , GlobalVariables &, std::map< std::string, double > & );
-inline bool variableIsDefined( Token *, ParameterValues, GlobalVariables &, std::map< std::string, double > &);
-bool castToDouble( std::vector<Token * > , GlobalVariables , ParameterValues );
+inline Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
+inline bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool castToDouble( std::vector<Token * > , GlobalVariables &, ParameterValues & );
 
 #endif

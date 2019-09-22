@@ -8,7 +8,7 @@
 // -basic beacon functionality
 
 //process definitions
-proc1[ j ] = {msg?[ 2 - 5*5*(j - 2)..20 ], 4}.{longAction,0.000001};
+proc1[ j ] = {msg?[ 2 - 5*5*(j - 2)..20 ](y), max(4,2)}.{longAction,0.000001};
 proc2[ j ] = [ (j == 3) | (j == 1) ] ->  {msg![ 2 - 5*5*(j - 2) ], 1}.( {action1,3.6} + {action2,5} );
 
 //system line
