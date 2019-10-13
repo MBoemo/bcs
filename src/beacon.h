@@ -137,10 +137,6 @@ class BeaconChannel{
 		void cleanSPFromChannel( SystemProcess *, int &, double & );
 		std::shared_ptr<Candidate> pickCandidate(double &, double, double);
 		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, double & );
-
-		void updateActives(int &, double &);
-		void updatePotentials(int &, double &);
-
 };
 
 
