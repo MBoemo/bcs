@@ -1,6 +1,7 @@
 #object files and binaries
 bin/bcs
 bin/test
+tests/eigen/testeigen
 bin/*.
 src/*.
 *.o
