@@ -785,7 +785,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 }
 
 
-bool evalRPN_set( int toTest, std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+bool evalRPN_set( int &toTest, std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 #if DEBUG_SETS
 std::cout << "Testing: " << toTest << std::endl;
@@ -796,7 +796,7 @@ std::cout << std::endl;
 //param2value.printValues();
 #endif
 
-	std::stack<RPNoperand *> evalStack;	
+	std::stack<RPNoperand *> evalStack;
 
 	for ( auto t = inputRPN.begin(); t < inputRPN.end(); t++ ){
 

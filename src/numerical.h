@@ -30,42 +30,42 @@ class Numerical{
 			isDouble_b = n.isDouble_b;
 			isInt_b = n.isInt_b;
 		}
-		void setDouble(double d){
+		inline void setDouble(double d){
 
 			assert(not isDouble_b and not isInt_b); //not already set
 			isDouble_b = true;
 			isInt_b = false;
 			dVal = d;
 		}
-		void setInt(int i){
+		inline void setInt(int i){
 
 			assert(not isDouble_b and not isInt_b); //not already set
 			isDouble_b = false;
 			isInt_b = true;
 			iVal = i;
 		}
-		int getInt(void){
+		inline int getInt(void){
 
 			assert(isInt_b and not isDouble_b);
 			return iVal;
 		}
-		double getDouble(void){
+		inline double getDouble(void){
 
 			assert(isDouble_b and not isInt_b);
 			return dVal;
 		}
-		double doubleCast(void){
+		inline double doubleCast(void){
 
 			assert(isDouble_b or isInt_b); //is already set
 			if ( isDouble_b ) return getDouble();
 			else return getInt();
 		}
-		bool isInt(void){
+		inline bool isInt(void){
 
 			assert(isDouble_b or isInt_b); //is already set
 			return isInt_b;
 		}
-		bool isDouble(void){
+		inline bool isDouble(void){
 
 			assert(isDouble_b or isInt_b); //is already set
 			return isDouble_b;

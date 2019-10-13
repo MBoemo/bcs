@@ -53,7 +53,7 @@ class System{
 		void splitOnParallel(SystemProcess &, Block *, std::list< SystemProcess> & );
 		void simulate( void );
 		std::streambuf *write( void ){ return _outputStream.rdbuf(); }
-		void removeChosenFromSystem( std::shared_ptr<Candidate> );
+		void removeChosenFromSystem( std::shared_ptr<Candidate>, bool );
 		void getParallelProcesses( std::shared_ptr<Candidate>, std::list< SystemProcess * > & );
 		SystemProcess * updateSpForTransition( std::shared_ptr<Candidate> );
 		bool variableIsDefined(std::string, ParameterValues &, std::map< std::string, Numerical > &);

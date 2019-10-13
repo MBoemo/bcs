@@ -49,11 +49,8 @@ _database.printContents(_channelName);
 				candidatesLeft++;
 				rateSum += rate.doubleCast();
 			}
-			else {
-
-				_potentialBeaconReceiveCands[sp].push_back( cand );
-			}
-
+			else _potentialBeaconReceiveCands[sp].push_back( cand );
+	
 #if DEBUG
 std::cout << ">>>>>>>>>>>>Adding candidate: Beacon check ";
 Token *t = b -> getToken();
@@ -118,6 +115,7 @@ std::cout << ">>>>>>>>>>>>Adding candidate: Beacon send ";
 Token *t = b -> getToken();
 std::cout << t -> value() << std::endl;
 #endif
+
 		assert( b -> identify() == "MessageSend" );
 		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( b );
 		Numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );

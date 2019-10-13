@@ -82,9 +82,9 @@ class SetOperand: public RPNoperand {
 };
 
 
-Numerical evalRPN_numerical( std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-bool evalRPN_condition( std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-bool evalRPN_set( int, std::vector< Token * > , ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+Numerical evalRPN_numerical( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool evalRPN_condition( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool evalRPN_set( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp );
 inline Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
 inline bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);

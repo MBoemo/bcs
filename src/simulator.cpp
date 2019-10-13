@@ -86,17 +86,17 @@ void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, st
 
 	if ( actionDone -> identify() == "Action" ){
 
-		ActionBlock *ab = dynamic_cast< ActionBlock * >( actionDone );
+		ActionBlock *ab = static_cast< ActionBlock * >( actionDone );
 		ss << time << '\t' << ab -> actionName << '\t' << actionDone -> getOwningProcess();
 	}
 	else if ( actionDone -> identify() == "MessageSend" ){
 
-		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( actionDone );
+		MessageSendBlock *msb = static_cast< MessageSendBlock * >( actionDone );
 		ss << time << '\t' << writeChannelName(msb -> getChannelName()) << '\t' << actionDone -> getOwningProcess();
 	}
 	else if ( actionDone -> identify() == "MessageReceive" ){
 
-		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( actionDone );
+		MessageReceiveBlock *mrb = static_cast< MessageReceiveBlock * >( actionDone );
 		ss << time << '\t' << writeChannelName(mrb -> getChannelName())  << '\t' << actionDone -> getOwningProcess();
 	}
 
@@ -122,17 +122,17 @@ void System::printTransition(double time, std::shared_ptr<Candidate> chosen){
 
 	if ( actionDone -> identify() == "Action" ){
 
-		ActionBlock *ab = dynamic_cast< ActionBlock * >( actionDone );
+		ActionBlock *ab = static_cast< ActionBlock * >( actionDone );
 		std::cout << time << '\t' << ab -> actionName << '\t' << actionDone -> getOwningProcess();
 	}
 	else if ( actionDone -> identify() == "MessageSend" ){
 
-		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( actionDone );
+		MessageSendBlock *msb = static_cast< MessageSendBlock * >( actionDone );
 		std::cout << time << '\t' << writeChannelName(msb -> getChannelName()) << '\t' << actionDone -> getOwningProcess();
 	}
 	else if ( actionDone -> identify() == "MessageReceive" ){
 
-		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( actionDone );
+		MessageReceiveBlock *mrb = static_cast< MessageReceiveBlock * >( actionDone );
 		std::cout << time << '\t' << writeChannelName(mrb -> getChannelName())  << '\t' << actionDone -> getOwningProcess();
 	}
 
@@ -200,7 +200,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 	}
 	else if ( current -> identify() == "MessageSend" ){
 
-		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( current );
+		MessageSendBlock *msb = static_cast< MessageSendBlock * >( current );
 		std::vector< std::string > channelName = substituteChannelName( msb -> getChannelName(), currentParameters, sp -> localVariables );
 
 		if ( msb -> isHandshake() ){
@@ -245,7 +245,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 	}
 	else if ( current -> identify() == "MessageReceive" ){
 
-		MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( current );
+		MessageReceiveBlock *mrb = static_cast< MessageReceiveBlock * >( current );
 		std::vector< std::string > channelName = substituteChannelName( mrb -> getChannelName(), currentParameters, sp -> localVariables );
 
 		if ( mrb -> isHandshake() ){
@@ -278,7 +278,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 	}
 	else if ( current -> identify() == "Gate" ){
 
-		GateBlock *gb = dynamic_cast< GateBlock * >( current );
+		GateBlock *gb = static_cast< GateBlock * >( current );
 		bool gateConditionHolds = evalRPN_condition( gb -> getConditionExpression(), currentParameters, _globalVars, sp -> localVariables );
 		if ( gateConditionHolds ){
 
@@ -289,7 +289,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 	}
 	else if ( current -> identify() == "Process" ){
 
-		ProcessBlock *pb = dynamic_cast< ProcessBlock * >(current);
+		ProcessBlock *pb = static_cast< ProcessBlock * >(current);
 
 		//update the parameter values based on any process arithmetic we're doing
 		ParameterValues oldParameterValues = currentParameters;
@@ -386,7 +386,7 @@ void System::splitOnParallel(SystemProcess *sp, Block *currentNode, std::list< S
 }
 
 
-void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove ){
+void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bool databaseUpdated ){
 
 	SystemProcess *sp = candToRemove -> processInSystem;
 
@@ -418,10 +418,13 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove ){
 		_candidatesLeft -= handshakesRemoved;
 	}
 
-	//reshuffle potential vs active beacon receives
-	for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
+	//reshuffle potential vs active beacon receives, but only do this if database was updated
+	if (databaseUpdated){
 
-		(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
+		for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
+
+			(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
+		}
 	}
 
 	//remove the system process from the system
@@ -485,7 +488,7 @@ std::cout << " at rate " << (*tc) -> rate << std::endl;
 #if DEBUG
 printTransition(_totalTime, *tc);
 #endif
-					removeChosenFromSystem(*tc);
+					removeChosenFromSystem(*tc, false);
 					found = true;
 					goto foundCand;
 				}
@@ -513,7 +516,7 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 				if ( newSp and (beaconCand -> actionCandidate) -> identify() == "MessageReceive" ){
 
 					//bind a new variable if applicable
-					MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( beaconCand -> actionCandidate );
+					MessageReceiveBlock *mrb = static_cast< MessageReceiveBlock * >( beaconCand -> actionCandidate );
 					if ( mrb -> bindsVariable() ){
 
 						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
@@ -529,7 +532,9 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 #if DEBUG
 printTransition(_totalTime, beaconCand);
 #endif
-				removeChosenFromSystem(beaconCand);
+
+				bool databaseUpdated = (beaconCand -> actionCandidate) -> identify() == "MessageSend";
+				removeChosenFromSystem(beaconCand, databaseUpdated);
 				found = true;
 				goto foundCand;
 			}
@@ -565,7 +570,7 @@ std::cout << " at rate " << hsCand -> rate << std::endl;
 				if ( newSp_receive ){
 
 					//bind a new variable if applicable
-					MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (hsCand -> hsReceiveCand) -> actionCandidate );
+					MessageReceiveBlock *mrb = static_cast< MessageReceiveBlock * >( (hsCand -> hsReceiveCand) -> actionCandidate );
 					if ( mrb -> bindsVariable() ){
 
 						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
@@ -587,8 +592,8 @@ printTransition(_totalTime, hsCand -> hsSendCand);
 printTransition(_totalTime, hsCand -> hsReceiveCand);
 #endif
 				//remove handshake from the system
-				removeChosenFromSystem( hsCand -> hsSendCand ); //problem here
-				removeChosenFromSystem( hsCand -> hsReceiveCand );
+				removeChosenFromSystem( hsCand -> hsSendCand, false );
+				removeChosenFromSystem( hsCand -> hsReceiveCand, false );
 
 				found = true;
 				goto foundCand;
