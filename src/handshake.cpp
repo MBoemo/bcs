@@ -93,7 +93,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				bool allPassed = true;
 				for ( unsigned int i = 0; i < sEval.size(); i++ ){
 
-					bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
+					bool setEval = evalRPN_setTest( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
 					if (not setEval) allPassed = false;
 					break;
 				}
@@ -128,7 +128,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				bool allPassed = true;
 				for ( unsigned int i = 0; i < sEval.size(); i++ ){
 
-					bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*addedReceive) -> parameterValues, _globalVars, (*addedReceive) -> localVariables );
+					bool setEval = evalRPN_setTest( sEval[i], setExpressions[i], (*addedReceive) -> parameterValues, _globalVars, (*addedReceive) -> localVariables );
 					if (not setEval) allPassed = false;
 					break;
 				}
@@ -161,7 +161,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 			bool allPassed = true;
 			for ( unsigned int i = 0; i < sEval.size(); i++ ){
 
-				bool setEval = evalRPN_set( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
+				bool setEval = evalRPN_setTest( sEval[i], setExpressions[i], (*r_cand) -> parameterValues, _globalVars, (*r_cand) -> localVariables );
 				if (not setEval) allPassed = false;
 				break;
 			}

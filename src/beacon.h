@@ -20,98 +20,112 @@
 #include "evaluate_trees.h"
 
 
+struct BetweenBounds {
+
+	BetweenBounds( std::vector< std::vector< std::pair<int, int> > > i ) : i_ {i} {}
+	bool operator()(std::vector< int > i) {
+
+		for ( unsigned int dim = 0; dim < i.size(); dim++ ){ //go through dimensions
+
+			bool dimMatch = false;
+
+			for ( auto b = i_[dim].begin(); b < i_[dim].end(); b++ ){ //go through the pairs of bounds that we have
+
+				if ( (*b).first <= i[dim] and i[dim] <= (*b).second ) dimMatch = true;
+				break;
+			}
+
+			if ( not dimMatch ) return false;
+		}
+
+		return true;
+	}
+	std::vector< std::vector< std::pair<int, int> > > i_;
+};
+
+
 class communicationDatabase{
 
 	private:
-		std::map< std::vector< std::string >, std::vector< std::vector< int > > > _channel2values;
+		std::map< int, std::set< std::vector< int > > > _arity2entries;
 		GlobalVariables _globalVars;
+
 	public:
-		inline void push( std::vector< std::string > channel, std::vector<int> i ){
+		inline void push( std::vector<int> i ){
 
-			if ( _channel2values.count( channel ) > 0 ){
+			if ( _arity2entries.count(i.size()) == 0 ){
 
-				if ( std::find( (_channel2values[ channel ]).begin(), (_channel2values[ channel ]).end(), i ) == (_channel2values[ channel ]).end() ){
-
-					(_channel2values[ channel ]).push_back( i );
-				}
-			}
+				_arity2entries[i.size()] = {i};
+			}			
 			else{
 
-				_channel2values[ channel ] = { i };
+				_arity2entries[i.size()].insert(i);
 			}
 		}
-		inline void pop( std::vector< std::string > channel, std::vector<int> i ){
+		inline void pop( std::vector<int> i ){
 
-			if ( _channel2values.count( channel ) > 0 ){
+			if ( _arity2entries.count( i.size() ) > 0 ){
 
-				for ( auto posItr = (_channel2values[ channel ]).begin(); posItr < (_channel2values[ channel ]).end(); ){
+				std::set< std::vector< int > >::iterator pos = _arity2entries[i.size()].find( i );
 
-					if ( (*posItr) == i ) posItr = (_channel2values[ channel ]).erase( posItr );
-					else posItr++;
+				if (pos != _arity2entries[i.size()].end()){
+
+					_arity2entries[i.size()].erase(pos);
 				}
 			}
 		}
-		inline bool check( std::vector< std::string > channel, std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		inline bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
-			if ( _channel2values.count( channel ) > 0 ){
+			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
 
-				//check everything in the database to see if any of it satisfies the set
-				for ( auto dbValues = _channel2values.at( channel ).begin(); dbValues < _channel2values.at( channel ).end(); dbValues++ ){
+			std::vector< std::vector< std::pair<int, int> > > bounds;
 
-					//require the same arity
-					if (setExpressions.size() != (*dbValues).size()) continue;
-		
-					//check each value against its set expression
-					bool allPassed = true;
-					for ( unsigned int i = 0; i < (*dbValues).size(); i++ ){
+			//get the bounds for each set expression
+			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-						bool setEval = evalRPN_set( (*dbValues)[i], setExpressions[i], param2value, _globalVars, localVariables );						
-						if (not setEval){
-							allPassed = false;
-							break;
-						}
-					}
-					if (allPassed) return true;
-				}
-				return false; //if we made it all the way to the end and didn't find anything that satisfies the condition, return false
+				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
+				bounds.push_back(b);
 			}
+			
+			std::set< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
+
+			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
 			else return false;
 		}
-		inline std::vector< std::vector< int > > findAll( std::vector< std::string > channel, std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 			std::vector< std::vector< int > > out;
 
-			if ( _channel2values.count( channel ) > 0 ){
+			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
 
-				//check everything in the database to see if any of it satisfies the set
-				for ( auto dbValues = _channel2values.at( channel ).begin(); dbValues < _channel2values.at( channel ).end(); dbValues++ ){
+			std::vector< std::vector< std::pair<int, int> > > bounds;
 
-					//require the same arity
-					if (setExpressions.size() != (*dbValues).size()) continue;
-		
-					//check each value against its set expression
-					bool allPassed = true;
-					for ( unsigned int i = 0; i < (*dbValues).size(); i++ ){
+			//get the bounds for each set expression
+			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-						bool setEval = evalRPN_set( (*dbValues)[i], setExpressions[i], param2value, _globalVars, localVariables );
-						if (not setEval){
-							allPassed = false;
-							break;
-						}
-					}
-					if (allPassed) out.push_back(*dbValues);
-				}
+				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
+				bounds.push_back(b);
 			}
+
+			std::set< std::vector< int > >::iterator pos;
+			while (pos != _arity2entries[setExpressions.size()].end()){
+
+				pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
+				if ( pos != _arity2entries[setExpressions.size()].end() ) out.push_back(*pos);
+			}
+
 			return out;
 		}
-		void printContents(std::vector< std::string > channel){ //for testing
+		void printContents( void ){ //for testing
 
 			std::cout << ">>>>>>>>>>>>DATABASE CONTENTS: ";
-			if ( _channel2values.count( channel ) > 0 ){
 
-				for ( auto dbValues = _channel2values.at( channel ).begin(); dbValues < _channel2values.at( channel ).end(); dbValues++ ){	
+			for ( auto dbValues = _arity2entries.begin(); dbValues != _arity2entries.end(); dbValues++ ){ //go through arities	
 
-					for ( unsigned int i = 0; i < (*dbValues).size(); i++ ) std::cout << (*dbValues)[i] << " ";
+				for ( auto entry = (dbValues -> second).begin(); entry != (dbValues -> second).end(); entry++ ){
+
+					for ( unsigned int i = 0; i < (*entry).size(); i++ ) std::cout << (*entry)[i] << " ";
+
 				}
 				std::cout << std::endl;
 			}
@@ -138,7 +152,6 @@ class BeaconChannel{
 		std::shared_ptr<Candidate> pickCandidate(double &, double, double);
 		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, double & );
 };
-
 
 
 #endif

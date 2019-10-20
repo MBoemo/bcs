@@ -785,7 +785,356 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 }
 
 
-bool evalRPN_set( int &toTest, std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+std::vector< std::pair< int, int > > unionBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
+
+	if ( B2.first <= B1.second and B1.second <= B2.second){
+
+		if ( B2.first <= B1.first and B1.first <= B2.second ) return {B2};
+		else return {std::make_pair(B1.first, B2.second)};
+	}
+	else if ( B1.first <= B2.second and B2.second <= B1.second){
+
+		if ( B1.first <= B2.first and B2.first <= B1.second ) return {B1};
+		else return {std::make_pair(B2.first, B1.second)};
+	}
+	else return {B1,B2};
+}
+
+
+std::vector< std::pair< int, int > > condenseToDisjoint( std::vector< std::pair<int, int> > S1 ){
+
+	bool condensed;
+	std::vector< std::pair< int, int > > out;
+
+	do{
+		condensed = false;
+		out.clear();
+		for (unsigned int i = 0; i < S1.size() - 1; i++){
+
+			for (unsigned int j = i+1; j < S1.size(); j++){
+
+				std::vector< std::pair< int, int > > u = unionBounds( S1[i], S1[j] );
+				out.insert(out.end(), u.begin(), u.end());
+				if (u.size() == 2) condensed = true;
+			}
+		}
+	} while(condensed);
+
+	return out;
+}
+
+
+std::vector< std::pair< int, int > > intersectBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
+
+	if ( B2.first <= B1.second and B1.second <= B2.second){
+
+		if ( B2.first <= B1.first and B1.first <= B2.second ) return {B1};
+		else return {std::make_pair(B2.first, B1.second)};
+	}
+	else if ( B1.first <= B2.second and B2.second <= B1.second){
+
+		if ( B1.first <= B2.first and B2.first <= B1.second ) return {B2};
+		else return {std::make_pair(B1.first, B2.second)};
+	}
+	else return {};
+}
+
+
+std::vector< std::pair<int, int> > setIntersection( std::vector< std::pair<int, int> > S1, std::vector< std::pair<int, int> > S2 ){
+
+	std::vector< std::pair< int, int > > out;
+	
+	for ( unsigned int i = 0; i < S1.size(); i++ ){
+
+		for ( unsigned int j = 0; j < S2.size(); j++ ){
+
+			std::vector< std::pair< int, int > > intersection = intersectBounds( S1[i], S2[j] );
+			out.insert(out.end(), intersection.begin(), intersection.end());
+		}
+	}
+
+	//merge bounds so that they're disjoint
+	return condenseToDisjoint(out);
+}
+
+
+std::vector< std::pair< int, int > > differenceBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
+
+	if ( B2.first == B1.second and B1.second == B2.second) return {};
+	else if ( B2.first <= B1.second and B1.second <= B2.second){
+
+		if ( B2.first <= B1.first and B1.first <= B2.second ) return {};
+		else return {std::make_pair(B1.first, B2.first-1)};
+	}
+	else if ( B1.first <= B2.second and B2.second <= B1.second){
+
+		if ( B1.first < B2.first and B2.first < B1.second ){ //fully contained
+
+			return {std::make_pair(B1.first, B2.first-1), std::make_pair(B2.second+1, B1.second)};
+		}
+		else if ( B1.first < B2.first and B2.first == B1.second ){ //right side aligns
+
+			return {std::make_pair(B1.first, B2.first-1)};
+		}
+		else if ( B1.first == B2.first and B2.first < B1.second ){ //left side aligns
+
+			return {std::make_pair(B2.second+1, B1.second)};
+		}
+		else return {std::make_pair(B2.second+1, B1.second)};
+	}
+	else return {B1};
+}
+
+
+std::vector< std::pair<int, int> > setDifference( std::vector< std::pair<int, int> > S1, std::vector< std::pair<int, int> > S2 ){
+
+	std::vector< std::pair< int, int > > out;
+	
+	for ( unsigned int i = 0; i < S1.size(); i++ ){
+
+		for ( unsigned int j = 0; j < S2.size(); j++ ){
+
+			std::vector< std::pair< int, int > > difference = differenceBounds( S1[i], S2[j] );
+			out.insert(out.end(), difference.begin(), difference.end());
+		}
+	}
+
+	//merge bounds so that they're disjoint
+	return condenseToDisjoint(out);
+}
+
+
+std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+
+#if DEBUG_SETS
+std::cout << "Testing: " << toTest << std::endl;
+std::cout << "Expression is: ";
+for (auto test = inputRPN.begin(); test < inputRPN.end(); test++) std::cout << (*test) -> value();
+std::cout << std::endl;
+//std::cout << "Parameters are:" << std::endl;
+//param2value.printValues();
+#endif
+
+	std::stack<RPNoperand *> evalStack;
+
+	for ( auto t = inputRPN.begin(); t < inputRPN.end(); t++ ){
+
+		if ( isOperator(*t) or (*t) -> identify() == "Function"){
+
+			if ( (*t) -> value() == "abs" or (*t) -> value() == "sqrt" or (*t) ->value() == "neg" ){ //unary
+
+				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
+				RPNoperand *operand = evalStack.top();
+				evalStack.pop();
+				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				Numerical op_n = numptr -> getValue();
+				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+
+				Numerical result;
+				if ( (*t) -> value() == "abs" ){
+
+					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
+					else result.setDouble(std::abs(op_n.getDouble()));
+				}
+				else if ( (*t) -> value() == "sqrt" ){
+
+					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
+					else result.setDouble(sqrt(op_n.getDouble()));
+				}
+				else if ( (*t) -> value() == "neg" ){
+
+					if (op_n.isInt()) result.setInt(-op_n.getInt());
+					else result.setDouble(-op_n.getDouble());
+				}
+				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
+
+				evalStack.push( new NumericalOperand(result) );
+				delete operand;
+			}
+			else if ( (*t) -> value() == "min" or (*t) -> value() == "max" or (*t) -> value() == "+" or (*t) -> value() == "-" or (*t) -> value() == "*" or (*t) -> value() == "/" or (*t) -> value() == "^"){
+
+				//get the operands and make sure they're of correct type for the operator
+				if ( evalStack.size() <= 1 ) throw SyntaxError(*t, "Insufficient arguments.");
+				RPNoperand *operand2 = evalStack.top();
+				evalStack.pop();
+				RPNoperand *operand1 = evalStack.top();
+				evalStack.pop();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
+				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+
+				//upcast
+				bool upcast = false;
+				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
+
+				Numerical result;
+				if ( (*t) -> value() == "+" ){
+
+					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() + op2_n.getInt() );
+				}
+				else if ( (*t) -> value() == "-" ){
+
+					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() - op2_n.getInt() );
+				}
+				else if ( (*t) -> value() == "/" ){
+
+					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() / op2_n.getInt() );
+				}
+				else if ( (*t) -> value() == "*" ){
+					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
+					else result.setInt( op1_n.getInt() * op2_n.getInt() );
+				}
+				else if ( (*t) -> value() == "^" ){
+
+					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
+				}
+				else if ( (*t) -> value() == "min" ){
+
+					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
+				}
+				else if ( (*t) -> value() == "max" ){
+
+					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
+					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+				}
+				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
+
+				evalStack.push( new NumericalOperand(result) );
+				delete operand1; delete operand2;
+			}
+			else if ( (*t) -> value() == ".." ){
+
+				//get the operands and make sure they're of correct type for the operator
+				if ( evalStack.size() <= 1 ) throw SyntaxError(*t, "Insufficient arguments.");
+				RPNoperand *operand2 = evalStack.top();
+				evalStack.pop();
+				RPNoperand *operand1 = evalStack.top();
+				evalStack.pop();
+				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
+				Numerical op1_n,op2_n;
+				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				op1_n = numptr -> getValue();
+				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				op2_n = numptr -> getValue();
+				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+
+				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
+
+				evalStack.push( new SetOperand({std::make_pair(op1_n.getInt(), op2_n.getInt())}) );
+				delete operand1; delete operand2;
+			}
+			else if ( (*t) -> value() == "U" or (*t) -> value() == "I" or (*t) -> value() == "\\" ){
+
+				//get the operands and make sure they're of correct type for the operator
+				if ( evalStack.size() <= 1 ) throw SyntaxError(*t, "Insufficient arguments.");
+				RPNoperand *operand2 = evalStack.top();
+				evalStack.pop();
+				RPNoperand *operand1 = evalStack.top();
+				evalStack.pop();
+				if (operand1 -> identify() != "Numerical" and operand1 -> identify() != "Set") throw WrongType(*t,operand1 -> identify());
+				if (operand2 -> identify() != "Numerical" and operand2 -> identify() != "Set") throw WrongType(*t,operand2 -> identify());
+				std::vector<std::pair<int, int>> op1_s, op2_s;
+				
+				//get everything in set format
+				if (operand1 -> identify() == "Numerical"){
+
+					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+					Numerical op1_n = numptr -> getValue();
+					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op1_s = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
+				}
+				else{
+
+					SetOperand *setptr = dynamic_cast<SetOperand *>(operand1);
+					op1_s = setptr -> getValue();
+				}
+
+				if (operand2 -> identify() == "Numerical"){
+
+					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand2);
+					Numerical op2_n = numptr -> getValue();
+					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op2_s = {std::make_pair(op2_n.getInt(), op2_n.getInt())};
+				}
+				else{
+
+					SetOperand *setptr = dynamic_cast<SetOperand *>(operand2);
+					op2_s = setptr -> getValue();
+				}
+
+				std::vector<std::pair<int, int>> result;
+				if ( (*t) -> value() == "U" ){
+					op1_s.insert(op1_s.end(), op2_s.begin(), op2_s.end() );
+					result = condenseToDisjoint( op1_s );
+				}
+				else if ( (*t) -> value() == "I" ){
+
+					result = setIntersection( op1_s, op2_s );
+				}
+				else if ( (*t) -> value() == "\\" ){
+
+					result = setDifference( op1_s, op2_s );
+				}
+				else throw SyntaxError(*t, "Unrecognised operator for set evaluation.");
+
+				evalStack.push( new SetOperand(result) );
+				delete operand1; delete operand2;
+			}
+		}
+		else if ( isOperand(*t) ){
+
+			//check types
+			if ((*t) -> identify() != "DoubleLiteral" and (*t) -> identify() != "IntLiteral" and (*t) -> identify() != "Variable"){
+
+				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
+			}			
+
+			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			evalStack.push( new NumericalOperand(result) );
+		}
+	}
+
+	if ( evalStack.top() -> identify() != "Set" and evalStack.top() -> identify() != "Numerical" ) throw SyntaxError( inputRPN[0], "Message receive expression must evaluate to a bool or an int" );
+
+	std::vector<std::pair<int, int>> result;
+	if ( evalStack.top() -> identify() == "Numerical" ){
+
+		NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(evalStack.top());
+		Numerical op1_n = numptr -> getValue();
+		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+		result = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
+	}
+	else{
+
+		SetOperand *setptr = dynamic_cast<SetOperand *>(evalStack.top());
+		result = setptr -> getValue();
+	}
+	delete evalStack.top();
+
+#if DEBUG_SETS
+std::cout << "Set is: " << std::endl;
+for ( auto itr = result.begin(); itr < result.end(); itr++ ){
+
+	std::cout << itr -> first << " " << itr -> second << std::endl;
+}
+#endif
+	return result;
+}
+
+
+bool evalRPN_setTest( int &toTest, std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 #if DEBUG_SETS
 std::cout << "Testing: " << toTest << std::endl;
@@ -1015,3 +1364,4 @@ std::cout << std::endl;
 #endif
 	return result;
 }
+

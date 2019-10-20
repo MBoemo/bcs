@@ -25,7 +25,7 @@ void BeaconChannel::addCandidate( Block *b, SystemProcess *sp, std::list< System
 
 #if DEBUG
 std::cout << std::endl;
-_database.printContents(_channelName);
+_database.printContents();
 #endif
 
 	if ( b -> identify() == "MessageReceive" ){
@@ -41,7 +41,7 @@ _database.printContents(_channelName);
 			cand -> rate = rate.doubleCast();
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			bool canReceive = _database.check( _channelName, setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			bool canReceive = _database.check( setExpressions, currentParameters, _globalVars, sp -> localVariables );
 
 			if ( not canReceive ){//only do a beacon check if you can't receive
 
@@ -62,7 +62,7 @@ std::cout << ">>>>>>>>>>>>Can receive? " << canReceive << std::endl;
 		else if ( not mrb -> isHandshake() ){ //beacon receive
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			std::vector< std::vector< int > > matchingParameters = _database.findAll( _channelName, setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			std::vector< std::vector< int > > matchingParameters = _database.findAll( setExpressions, currentParameters, _globalVars, sp -> localVariables );
 
 			//build a candidate for each possible beacon receive on this parameter set
 			for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){
@@ -189,7 +189,7 @@ void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum)
 _database.printContents(_channelName);
 #endif
 
-			bool canReceive = _database.check( _channelName, setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			bool canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 
 			if ( (not canReceive and not mrb -> isCheck()) or (canReceive and mrb -> isCheck()) ){
 
@@ -210,7 +210,7 @@ _database.printContents(_channelName);
 			SystemProcess *sp = (*cand) -> processInSystem;
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (*cand) -> actionCandidate );
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			bool canReceive = _database.check( _channelName, setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			bool canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 			if (mrb -> isCheck() and not canReceive){
 
 				_activeBeaconReceiveCands[sp].push_back(*cand);
@@ -222,7 +222,7 @@ _database.printContents(_channelName);
 			}
 			else if (not mrb -> isCheck()){
 
-				std::vector< std::vector< int > > matchingParameters = _database.findAll( _channelName, setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				std::vector< std::vector< int > > matchingParameters = _database.findAll( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 
 				//build a candidate for each possible beacon receive on this parameter set
 				for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){
@@ -304,7 +304,7 @@ std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, do
 						param.push_back(paramEval.getInt());
 					}
 
-					_database.pop( _channelName, param );
+					_database.pop( param );
 				}
 				else if ( not msb -> isHandshake() ){
 
@@ -316,7 +316,7 @@ std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, do
 						if (paramEval.isDouble()) throw WrongType((*exp)[0],"Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 						param.push_back(paramEval.getInt());
 					}
-					_database.push( _channelName, param );
+					_database.push( param );
 				}				
 				return *cand;
 			}

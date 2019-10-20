@@ -72,19 +72,20 @@ class BoolOperand: public RPNoperand {
 class SetOperand: public RPNoperand {
 
 	private:
-		std::set<int> _underlyingSet;
+		std::vector<std::pair<int, int>> _underlyingSet;
 
 	public:
-		SetOperand( std::set<int> in ){_underlyingSet = in;}
+		SetOperand( std::vector<std::pair<int, int>> in ){_underlyingSet = in;}
  		~SetOperand(){}
 		std::string identify( void ) const { return "Set"; }
-		std::set<int> getValue(void){return _underlyingSet;}
+		std::vector<std::pair<int, int>> getValue(void){return _underlyingSet;}
 };
 
 
 Numerical evalRPN_numerical( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 bool evalRPN_condition( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-bool evalRPN_set( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+bool evalRPN_setTest( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp );
 inline Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
 inline bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
