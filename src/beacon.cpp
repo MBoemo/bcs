@@ -176,6 +176,11 @@ void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, 
 
 void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum){
 
+#if DEBUG
+std::cout << "Updating candidates (first)...." << std::endl;
+_database.printContents();
+#endif
+
 	//move any actives that have become inactive to potential
 	for ( auto candPair = _activeBeaconReceiveCands.begin(); candPair != _activeBeaconReceiveCands.end(); candPair++ ){
 
@@ -184,10 +189,6 @@ void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum)
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (*cand) -> actionCandidate );
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			SystemProcess *sp = (*cand) -> processInSystem;
-
-#if DEBUG
-_database.printContents(_channelName);
-#endif
 
 			bool canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 
@@ -202,8 +203,14 @@ _database.printContents(_channelName);
 		}
 	}
 
+#if DEBUG
+std::cout << "Updating candidates (second)...." << std::endl;
+_database.printContents();
+#endif
+
 	//move any potentials to active if they can now receive
 	for ( auto candPair = _potentialBeaconReceiveCands.begin(); candPair != _potentialBeaconReceiveCands.end(); candPair++ ){
+
 
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end();){
 
@@ -218,7 +225,7 @@ _database.printContents(_channelName);
 				if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
 				candidatesLeft++;
 				rateSum += rate.doubleCast();
-				cand = (candPair -> second).erase(cand);			
+				cand = (candPair -> second).erase(cand);
 			}
 			else if (not mrb -> isCheck()){
 
@@ -251,17 +258,24 @@ _database.printContents(_channelName);
 					candidatesLeft++;
 					rateSum += rate.doubleCast();
 				}
-
 				if (matchingParameters.size() > 0) cand = (candPair -> second).erase(cand);
 				else cand++;
 			}
 			else cand++;
 		}
 	}
+#if DEBUG
+std::cout << "Updating candidates (third)...." << std::endl;
+_database.printContents();
+#endif
 }
 
 
 std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, double uniformDraw, double rateSum){
+
+#if DEBUG
+std::cout << ">>>>>>>>>>>>Picking beacon candidate..." << std::endl;
+#endif
 
 	for ( auto candPair = _activeBeaconReceiveCands.begin(); candPair != _activeBeaconReceiveCands.end(); candPair++ ){
 

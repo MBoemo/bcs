@@ -803,6 +803,11 @@ std::vector< std::pair< int, int > > unionBounds( std::pair<int, int> B1, std::p
 
 std::vector< std::pair< int, int > > condenseToDisjoint( std::vector< std::pair<int, int> > S1 ){
 
+#if DEBUG_SETS
+std::cout << "Condensing to disjoint..." << std::endl;
+for ( auto p = S1.begin(); p < S1.end(); p++ ) std::cout << p -> first << " " << p -> second << std::endl;
+#endif
+
 	bool condensed;
 	std::vector< std::pair< int, int > > out;
 
@@ -815,7 +820,7 @@ std::vector< std::pair< int, int > > condenseToDisjoint( std::vector< std::pair<
 
 				std::vector< std::pair< int, int > > u = unionBounds( S1[i], S1[j] );
 				out.insert(out.end(), u.begin(), u.end());
-				if (u.size() == 2) condensed = true;
+				if (u.size() != 2) condensed = true;
 			}
 		}
 	} while(condensed);
@@ -825,6 +830,10 @@ std::vector< std::pair< int, int > > condenseToDisjoint( std::vector< std::pair<
 
 
 std::vector< std::pair< int, int > > intersectBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
+
+#if DEBUG_SETS
+std::cout << "Intersect bounds..." << std::endl;
+#endif
 
 	if ( B2.first <= B1.second and B1.second <= B2.second){
 
@@ -841,6 +850,10 @@ std::vector< std::pair< int, int > > intersectBounds( std::pair<int, int> B1, st
 
 
 std::vector< std::pair<int, int> > setIntersection( std::vector< std::pair<int, int> > S1, std::vector< std::pair<int, int> > S2 ){
+
+#if DEBUG_SETS
+std::cout << "Set intersection..." << std::endl;
+#endif
 
 	std::vector< std::pair< int, int > > out;
 	
@@ -859,6 +872,10 @@ std::vector< std::pair<int, int> > setIntersection( std::vector< std::pair<int, 
 
 
 std::vector< std::pair< int, int > > differenceBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
+
+#if DEBUG_SETS
+std::cout << "Difference bounds..." << std::endl;
+#endif
 
 	if ( B2.first == B1.second and B1.second == B2.second) return {};
 	else if ( B2.first <= B1.second and B1.second <= B2.second){
@@ -888,6 +905,10 @@ std::vector< std::pair< int, int > > differenceBounds( std::pair<int, int> B1, s
 
 std::vector< std::pair<int, int> > setDifference( std::vector< std::pair<int, int> > S1, std::vector< std::pair<int, int> > S2 ){
 
+#if DEBUG_SETS
+std::cout << "Set difference..." << std::endl;
+#endif
+
 	std::vector< std::pair< int, int > > out;
 	
 	for ( unsigned int i = 0; i < S1.size(); i++ ){
@@ -907,7 +928,6 @@ std::vector< std::pair<int, int> > setDifference( std::vector< std::pair<int, in
 std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 #if DEBUG_SETS
-std::cout << "Testing: " << toTest << std::endl;
 std::cout << "Expression is: ";
 for (auto test = inputRPN.begin(); test < inputRPN.end(); test++) std::cout << (*test) -> value();
 std::cout << std::endl;

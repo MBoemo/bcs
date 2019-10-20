@@ -107,11 +107,16 @@ class communicationDatabase{
 				bounds.push_back(b);
 			}
 
-			std::set< std::vector< int > >::iterator pos;
+			std::set< std::vector< int > >::iterator pos = _arity2entries[setExpressions.size()].begin();
 			while (pos != _arity2entries[setExpressions.size()].end()){
 
-				pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
-				if ( pos != _arity2entries[setExpressions.size()].end() ) out.push_back(*pos);
+				pos = std::find_if(pos, _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
+
+				if ( pos != _arity2entries[setExpressions.size()].end() ){
+
+					out.push_back(*pos);
+					pos++;
+				}
 			}
 
 			return out;
@@ -129,6 +134,7 @@ class communicationDatabase{
 				}
 				std::cout << std::endl;
 			}
+			std::cout << std::endl;
 		}
 };
 
