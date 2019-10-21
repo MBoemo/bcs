@@ -10,7 +10,7 @@
 //process definitions
 process1[ i ] = {launch![i], 10}.{launch2?[i], 1}.{found1,100};
 process2[ i ] = {launch![i], 10}.{launch2?[i], 1}.{found2,100};
-process3[ i ] = {launch?[1..10](x),x}.{launch2![x], 1000};
+process3[ i ] = {launch?[1..10](x),1}.{launch2![x], 1000};
 
 //system line
 process1[1] || process2[2] || process3[3];

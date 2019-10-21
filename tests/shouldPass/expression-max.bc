@@ -9,7 +9,7 @@
 
 //test absolute value
 proc1[] = {action1, 2*max(5,8)/4}.{action2,max(abs(2 + 5/2*5*(1 - 4)),1)};
-proc2[] = {action1, max(1-60,8)}; //this doesn't work right, it produces 1 60 8 - max which gives 58
+proc2[] = {action1, max(1-60,8)};
 
 //system line
 proc1[] || proc2[] ;

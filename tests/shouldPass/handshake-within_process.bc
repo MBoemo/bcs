@@ -1,0 +1,12 @@
+//EXPECTED BEHAVIOUR:
+//A single process executes two processes in parallel - a handshake send and handshake receive 
+//This handshake should be able to complete successfully and then the lone process should deadlock
+
+//WHAT IT TESTS:
+// -splitting a process into two independent processes when we encounter a parallel operator
+
+//process definitions
+process[i] = {@msg![i],3} || {@msg?[i],2};
+
+//system line
+process[0];

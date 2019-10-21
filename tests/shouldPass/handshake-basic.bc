@@ -10,8 +10,8 @@
 rateVar = 3.5;
 
 //process definitions
-proc1[ j ] = {@msg?[1..5 U 6..9 ]( bindingVar ), 4}.{longAction, 0.00001};
-proc2[ j ] = [ (j == 3) | (j == 1+0) ] ->  { @msg![5 ], rateVar} .( { shortAction1, 3.6} + {shortAction2, 5 } );
+proc1[ j ] = {@msg?[1..5 U 6..9, 8](x,y), 4}.{longAction, 0.00001};
+proc2[ j ] = [(j == 3) | (j == 1+0)] -> {@msg![5, 8], rateVar}.({shortAction1, 3.6} + {shortAction2, 5});
 
 //system line
 proc1[3] || proc2[3];

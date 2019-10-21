@@ -797,6 +797,8 @@ std::vector< std::pair< int, int > > unionBounds( std::pair<int, int> B1, std::p
 		if ( B1.first <= B2.first and B2.first <= B1.second ) return {B1};
 		else return {std::make_pair(B2.first, B1.second)};
 	}
+	else if ( B1.second + 1 == B2.first ) return {std::make_pair(B1.first, B2.second)};
+	else if ( B2.second + 1 == B1.first ) return {std::make_pair(B2.first, B1.second)};
 	else return {B1,B2};
 }
 
@@ -805,11 +807,14 @@ std::vector< std::pair< int, int > > condenseToDisjoint( std::vector< std::pair<
 
 #if DEBUG_SETS
 std::cout << "Condensing to disjoint..." << std::endl;
+std::cout << "Before condensing:" << std::endl;
 for ( auto p = S1.begin(); p < S1.end(); p++ ) std::cout << p -> first << " " << p -> second << std::endl;
 #endif
 
 	bool condensed;
 	std::vector< std::pair< int, int > > out;
+
+	if (S1.size() == 0) return out;
 
 	do{
 		condensed = false;
@@ -819,13 +824,29 @@ for ( auto p = S1.begin(); p < S1.end(); p++ ) std::cout << p -> first << " " <<
 			for (unsigned int j = i+1; j < S1.size(); j++){
 
 				std::vector< std::pair< int, int > > u = unionBounds( S1[i], S1[j] );
-				out.insert(out.end(), u.begin(), u.end());
-				if (u.size() != 2) condensed = true;
+
+				if (u.size() == 1){
+					
+					if ( std::find(out.begin(),out.end(),u[0]) == out.end() ) out.push_back(u[0]);
+					condensed = true;
+				}
+				else{
+
+					if ( std::find(out.begin(),out.end(),u[0]) == out.end() ) out.push_back(u[0]);
+					if ( std::find(out.begin(),out.end(),u[0]) == out.end() ) out.push_back(u[1]);
+				}
 			}
 		}
+		if (condensed) S1 = out;
+
 	} while(condensed);
 
-	return out;
+#if DEBUG_SETS
+std::cout << "After condensing:" << std::endl;
+for ( auto p = S1.begin(); p < S1.end(); p++ ) std::cout << p -> first << " " << p -> second << std::endl;
+#endif
+
+	return S1;
 }
 
 
@@ -875,6 +896,10 @@ std::vector< std::pair< int, int > > differenceBounds( std::pair<int, int> B1, s
 
 #if DEBUG_SETS
 std::cout << "Difference bounds..." << std::endl;
+std::cout << "B1:" << std::endl;
+std::cout << B1.first << " " << B1.second << std::endl;
+std::cout << "B2:" << std::endl;
+std::cout << B2.first << " " << B2.second << std::endl;
 #endif
 
 	if ( B2.first == B1.second and B1.second == B2.second) return {};

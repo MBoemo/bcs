@@ -31,8 +31,14 @@ struct BetweenBounds {
 
 			for ( auto b = i_[dim].begin(); b < i_[dim].end(); b++ ){ //go through the pairs of bounds that we have
 
-				if ( (*b).first <= i[dim] and i[dim] <= (*b).second ) dimMatch = true;
-				break;
+				//testing
+				//std::cout << "<<<< " << (*b).first << " " << i[dim] << " " << (*b).second << std::endl;
+
+				if ( (*b).first <= i[dim] and i[dim] <= (*b).second ){
+
+					dimMatch = true;
+					break;
+				}
 			}
 
 			if ( not dimMatch ) return false;
