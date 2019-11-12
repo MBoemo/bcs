@@ -59,48 +59,50 @@ int precedence( Token *t ){
 					    {"..", -1},
 					    {"&", 0},
 					    {"|", 0},
-					    {">", 1},
-					    {"<", 1},
-					    {">=", 1},
-					    {"<=", 1},
-					    {"==", 1},
-					    {"!=", 1},
-					    {"+", 2},
-					    {"-", 2},
-					    {"*", 3},
-					    {"/", 3},
-					    {"neg", 4},
-					    {"^", 5}};
+					    {"~", 1},
+					    {">", 2},
+					    {"<", 2},
+					    {">=", 2},
+					    {"<=", 2},
+					    {"==", 2},
+					    {"!=", 2},
+					    {"+", 3},
+					    {"-", 3},
+					    {"*", 4},
+					    {"/", 4},
+					    {"neg", 5},
+					    {"^", 6}};
 	assert( precMap.find( t-> value() ) != precMap.end() );
 
 	return precMap[t->value()];
 }
 
+std::map<std::string,int> precMap = {{"U", 5},
+				    {"I", 4},
+				    {"\\", 3},
+				    {"..", 2},
+				    {"&", 1},
+				    {"|", 1},
+				    {"~", 0},
+				    {">", -1},
+				    {"<", -1},
+				    {">=", -1},
+				    {"<=", -1},
+				    {"==", -1},
+				    {"!=", -1},
+				    {"+", -2},
+				    {"-", -2},
+				    {"*", -3},
+				    {"/", -3},
+				    {"^",-4},
+				    {"neg", -5},
+				    {"min",-6},
+				    {"max",-6},
+				    {"sqrt",-6},
+				    {"abs", -7}};
 
 int parsePrecedence( Token *t ){
 
-	std::map<std::string,int> precMap = {{"min",-5},
-					    {"max",-5},
-					    {"sqrt",-5},
-					    {"abs",-5},
-					    {"U", -4},
-					    {"I", -3},
-					    {"\\", -2},
-					    {"..", -1},
-					    {"&", 0},
-					    {"|", 0},
-					    {">", 1},
-					    {"<", 1},
-					    {">=", 1},
-					    {"<=", 1},
-					    {"==", 1},
-					    {"!=", 1},
-					    {"+", 2},
-					    {"-", 2},
-					    {"*", 3},
-					    {"/", 3},
-					    {"neg", 4},
-					    {"^", 5}};
 	assert( precMap.find( t-> value() ) != precMap.end() );
 	return precMap[t->value()];
 }
@@ -158,7 +160,7 @@ bool isValidInfixExpression( std::vector< Token * > inputExp ){
 	std::stack< Token * > parenStack;
 
 	//find operator with the highest precedence
-	int highScore = -6;
+	int highScore = -100;
 	std::vector<Token *>::iterator idx;
 	bool found = false;
 	for ( auto t = inputExp.begin(); t < inputExp.end(); t++ ){
@@ -169,9 +171,17 @@ bool isValidInfixExpression( std::vector< Token * > inputExp ){
 		if ( (isOperator(*t) or (*t) -> identify() == "Function") and parenStack.empty() ){
 
 			int precedence;
-			if ((*t) -> value() == "-" and (t == inputExp.begin() or isOperator(*t) or (*t) -> value() == "(")){//is negation
+			if ((*t) -> value() == "-" and t == inputExp.begin()){//is negation
 
-				precedence = 4;
+				precedence = precMap.at("neg");
+			}
+			else if ((*t) -> value() == "-" and t != inputExp.begin()){
+
+				if (isOperator(*(t-1)) or (*(t-1)) -> value() == "("){
+
+					precedence = precMap.at("neg");
+				}
+				else precedence = parsePrecedence(*t);
 			}
 			else precedence = parsePrecedence(*t);
 			
@@ -259,6 +269,13 @@ bool isValidInfixExpression( std::vector< Token * > inputExp ){
 		inputExp.erase( inputExp.begin() ); //erase abs or sqrt
 		inputExp.erase( inputExp.end() - 1 ); //erase )
 
+		if (isValidInfixExpression(inputExp)) return true;
+		else return false;
+	}
+	else if ((*idx) -> value() == "~" ){//logical NOT
+
+		if (RHS.size() < 3 or LHS.size() != 0) return false;//RHS must be at least a conditional (so i < j etc.)
+		inputExp.erase(idx);
 		if (isValidInfixExpression(inputExp)) return true;
 		else return false;
 	}
@@ -754,6 +771,21 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 
 				evalStack.push( new BoolOperand(result) );
 				delete operand1; delete operand2;
+			}
+			else if ( (*t) -> value() == "~" ){
+
+				//get the operands and make sure they're of correct type for the operator
+				if ( evalStack.size() < 1 ) throw SyntaxError(*t, "Insufficient arguments.");
+				RPNoperand *operand = evalStack.top();
+				evalStack.pop();
+				if (operand -> identify() != "Bool") throw WrongType(*t,operand -> identify());
+				bool op_b;
+				BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand);
+				op_b = boolptr -> getValue();
+
+				bool result = not op_b;
+				evalStack.push( new BoolOperand(result) );
+				delete operand;
 			}
 			
 		}

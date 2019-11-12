@@ -268,10 +268,10 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	SemicolonTestMachine.designate_endState( "endState" );
 	SemicolonTestMachine.add_edge( SemicolonTestMachine.startState, {';'}, "endState" );
 
-	/*accepts a boolean comparison ( <, >, ==, <=, >=, != ) */
+	/*accepts a boolean comparison ( <, >, ==, <=, >=, !=, ~ ) */
 	ComparisonTestMachine.designate_endState( "es1" );
 	ComparisonTestMachine.designate_endState( "es2" );
-	ComparisonTestMachine.add_edge( ComparisonTestMachine.startState, {'|', '&'}, "es2" );
+	ComparisonTestMachine.add_edge( ComparisonTestMachine.startState, {'|', '~', '&'}, "es2" );
 	ComparisonTestMachine.add_edge( ComparisonTestMachine.startState, {'>', '<'}, "es1" );
 	ComparisonTestMachine.add_edge( "es1", {'='}, "es2" );
 	ComparisonTestMachine.add_edge( ComparisonTestMachine.startState, {'=','!'}, "q1" );
@@ -322,7 +322,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	GateTestMachine.add_edge( "q1", {' '}, "q1" );
 	GateTestMachine.add_edge( "q1", setNumeric, "q1" );
 	GateTestMachine.add_edge( "q1", setAlpha, "q1" );
-	GateTestMachine.add_edge( "q1", {'>', '<', '=', '!', '|', '&','(',')','_','.','+','-','*','^','/'}, "q1" );
+	GateTestMachine.add_edge( "q1", {'>', '<', '~', '=', '!', '|', '&','(',')','_','.','+','-','*','^','/'}, "q1" );
 	GateTestMachine.add_edge( "q1", {']'}, "q8" );
 	GateTestMachine.add_edge( "q8", {' '}, "q8" );
 	GateTestMachine.add_edge( "q8", {'-'}, "q9" );
