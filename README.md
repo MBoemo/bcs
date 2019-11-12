@@ -1,5 +1,5 @@
 # bcs
-Simulates the behaviour of systems written in the beacon calculus.  Development was done using gcc 5.4.0 on an Ubuntu 16.04 platform.
+Simulates the behaviour of systems written in the Beacon Calculus.  Development was done using gcc 5.4.0 on an Ubuntu 16.04 platform.
 
 ## Downloading and Compiling bcs
 Clone the bcs repository by running:
