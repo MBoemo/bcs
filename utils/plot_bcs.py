@@ -9,80 +9,66 @@
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
-
-#--------------------------------------------------------------------------------------------------------------------------------------
-class arguments:
-	pass
+import sys
+import argparse
 
 
-#--------------------------------------------------------------------------------------------------------------------------------------
-def splashHelp():
-	s = """plot_bcs.py: Plotting utility for the Beacon Calculus Simulator (bcs).
-To run plot_bcs.py, do:
-  python plot_bcs.py [arguments] [bcs output]
-Example:
-  python plot_bcs.py -m /path/to/thymidine_model -e /path/to/nanopolish_eventalignment -o outputPlot.pdf bcsOutput.simulation.bcs
-Required arguments are:
-  -m,--ont_model            path to thymidine-only ONT model,
-  -e,--alignment            path to Nanopolish eventalign output file,
-  -o,--output               output prefix,
-  -n,--maxReads             maximum number of reads to import from eventalign."""
-
-	print s
-	exit(0)
+#ARGUMENTS--------------------------------------------------------------------------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument('-a', metavar='action',nargs='+',required=True,help="Action name to track")
+parser.add_argument('-p', metavar='process',nargs='+',required=True,help="Process name to track")
+parser.add_argument('-i', metavar='parameter',nargs=1,required=True,help="Parameter name to track")
+parser.add_argument('-o', metavar='output',nargs=1,required=True,help="Output plot filename (use .png or .pdf extension)")
+parser.add_argument('-m', metavar='maxSimulation',nargs=1,help="Maximum number of simulations to plot")
+parser.add_argument('filename',help="Output .simulation.bcs file from bcs.")
+args = parser.parse_args(sys.argv[1:])
+argDict = vars(args)
+print argDict
 
 
-#--------------------------------------------------------------------------------------------------------------------------------------
-def parseArguments(args):
+#MAIN-------------------------------------------------------------------------------------------------
+f = open(argDict['filename'])
+plt.figure()
+simCount = 0
+x = []
+y = []
 
-	a = arguments()
-	a.clipToMax = False
-	a.maxReads = 1
+for line in f:
 
-	for i, argument in enumerate(args):
-			
-		if argument == '-m' or argument == '--ont_model':
-			a.ont_model = str(args[i+1])
+	if line[0] == '>':
 
-		elif argument == '-e' or argument == '--alignment':
-			a.eventalign = str(args[i+1])
+		#do the plotting
+		if simCount > 0:
+			plt.scatter(x,y)
 
-		elif argument == '-o' or argument == '--output':
-			a.outFile = str(args[i+1])
+		x = []
+		y = []
+		simCount += 1
+		if argDict['m'] is not None:
+			if simCount >= int(argDict['m'][0]):
+				break
+		continue
 
-		elif argument == '-n' or argument == '--maxReads':
-			a.maxReads = int(args[i+1])
-			a.clipToMax = True 
+	#parse the line
+	splitLine = line.rstrip().split()
+	time = float(splitLine[0])
+	action = splitLine[1]
+	process = splitLine[2]
+	if len(splitLine) > 3:	
+		parameters = {}
+		for i, entry in enumerate(splitLine[3:]):
+			if i%2 == 1:
+				parameters[splitLine[3:][i-1]] = float(entry)
 
-		elif argument == '-h' or argument == '--help':
-			splashHelp()
-
-	#check that required arguments are met
-	if not hasattr( a, 'ont_model') or not hasattr( a, 'eventalign') or not hasattr( a, 'outFile') or not hasattr( a, 'maxReads'):
-		splashHelp() 
-
-	return a
-
-
-#--------------------------------------------------------------------------------------------------------------------------------------
-def displayProgress(current, total):
-
-	barWidth = 70
-	progress = float(current)/float(total)
-
-	if progress <= 1.0:
-		sys.stdout.write('[')
-		pos = int(barWidth*progress)
-		for i in range(barWidth):
-			if i < pos:
-				sys.stdout.write('=')
-			elif i == pos:
-				sys.stdout.write('>')
-			else:
-				sys.stdout.write(' ')
-		sys.stdout.write('] '+str(int(progress*100))+' %\r')
-		sys.stdout.flush()
-
-
-
+	if action in argDict['a'] and process in argDict['p'] and argDict['i'][0] in parameters:
+		y.append(parameters[argDict['i'][0]])
+		x.append(time)
+print x
+print y
+#save figure
+if len(x) > 0 and len(y) > 0:
+	plt.scatter(x,y)
+plt.xlabel('Time')
+plt.ylabel(argDict['i'][0])
+plt.savefig(argDict['o'][0])
 
