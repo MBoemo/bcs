@@ -14,15 +14,15 @@ make
 This will put the bcs executable into the bcs/bin directory.  bcs was tested to compile and run on both OSX and Linux systems.
 
 ## Manual
-A manual for writing models in the beacon calculus and using bcs is available at https://www.michaelboemo.com/bcs.  It includes:
+A manual for writing models in the beacon calculus and using bcs is available at https://www.boemogroup.org/the-beacon-calculus.  It includes:
 - quick-start tutorials,
 - a bank of examples,
 - a full list of features.
 
 ## Citation
-The beacon calculus language and bcs simulator are described in the following preprint posted to bioRxiv:
+The Beacon Calculus language and bcs simulator are described in the following preprint posted to bioRxiv:
 
 Boemo, M.A., Cardelli, L., Nieduszynski, C.A. (2019) The Beacon Calculus: A formal method for the flexible and concise modelling of biological systems.  bioRxiv DOI: https://doi.org/10.1101/579029
 
 ## Questions and Comments
-If you have comments or suggestions for the beacon calculus, the bcs software, or the manual, please Email michael.boemo@path.ox.ac.uk.  Should any bugs arise, please report them to https://github.com/MBoemo/bcs/issues. 
+Should any bugs arise or if you have a question about usage, please raise a GitHub issue at https://github.com/MBoemo/bcs/issues. If you have comments or suggestions to improve the Beacon Calculus, the bcs software, or the manual, please Email mb915@cam.ac.uk.
