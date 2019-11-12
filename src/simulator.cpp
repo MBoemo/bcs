@@ -310,14 +310,19 @@ void System::sumTransitionRates( SystemProcess *sp,
 		std::list< SystemProcess > forLeft = parallelProcesses;
 		SystemProcess left_sp = SystemProcess( *sp );
 		left_sp.parseTree = bt.getSubtree( children[1] );
+		//printBlockTree(left_sp.parseTree,left_sp.parseTree.getRoot());
+		//std::cout << children[1] -> identify() << std::endl;
 		forLeft.push_back( left_sp );
 		sumTransitionRates( sp, bt, children[0], forLeft, currentParameters );
 
 		//right child
 		SystemProcess right_sp = SystemProcess( *sp );
 		right_sp.parseTree = bt.getSubtree( children[0] );
+		//printBlockTree(right_sp.parseTree,right_sp.parseTree.getRoot());
+		//std::cout << children[0] -> identify() << std::endl;
 		parallelProcesses.push_back( right_sp );
 		sumTransitionRates( sp, bt, children[1], parallelProcesses, currentParameters );
+		//NOTE: the indexing for children looks weird, but it's fine and it's also checked by the process-parallelTreeRecursion.bc test
 	}
 	else {
 		std::vector< Block * > children = bt.getChildren(current);

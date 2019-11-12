@@ -1,0 +1,11 @@
+//EXPECTED BEHAVIOUR:
+//The model should be parsed correctly, but it should only perform action1 and action2
+
+//WHAT IT TESTS:
+// -this is a unit test for parallel operators within System::sumTransitionRates
+
+//test absolute value
+proc[ j ] = [j==0] -> ({action1, 1}.{action2, 1} || {@handshake![0],1}.{@handshake![1],1});
+
+//system line
+proc[0];
