@@ -1,7 +1,7 @@
 //multisite phosphorylation model from Boemo, Cardelli, and Nieduszynski (2019)
 
 intlPhosphatase = 100;
-intlKinase = 100; //varied in Fig. 3c 
+intlKinase = 100;//100; //varied in Fig. 3c 
 intlReceptors = 10;
 pSites = 20;
 kPlus = 0.1;

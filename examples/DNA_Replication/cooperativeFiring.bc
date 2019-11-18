@@ -6,7 +6,7 @@ v = 1.4; //fork velocity in kilobases per minute
            
 //process definitions
 ORI[i,fire,q] = {licensed,q*fast}.({~chr?[i],fire}.{coop![i],fast}.(FL[i]||FR[i]) 
-		  + {coop?[i-50..i+50](x),1/abs(i-x)}.{~chr?[i],fast}.{coop![i],fast}.(FL[i]||FR[i]))
+		  + {coop?[i-50..i+50](x),1.0/abs(i-x)}.{~chr?[i],fast}.{coop![i],fast}.(FL[i]||FR[i]))
               + {nlicensed,fast*(1-q)};
 FR[i] = {chr![i],fast}.[i < L] -> {~chr?[i+1],v}.FR[i+1];
 FL[i] = {chr![i],fast}.[i > 0] -> {~chr?[i-1],v}.FL[i-1];

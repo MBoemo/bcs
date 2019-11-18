@@ -2,14 +2,13 @@
 
 k_basal = 0.03125; //1.25 molecules per generation, 1.25*(1/40min)
 k_me = 0.0375; //1.5 molecules per generation, 1.5*(1/40min)
-k_dmg = 0.1;//0.0001;// //aquire DNA damage
+k_dmg = 0.0001;//0.1; //aquire DNA damage
 k_division = 0.025;//E.coli replication time about 40 min
-rho = 0.01625; // 0.65 per generation, 0.65*(1/40min)
-kMax = 10; //max rate to generate Ada
+kMax = 10.0; //max rate to generate Ada
 fast = 10000;
 
 //process definitions
-CELL[A,mA,d] = {generate_Ada, k_basal + kMax*(mA/(mA+10))}.CELL[A+1,mA,d]
+CELL[A,mA,d] = {generate_Ada, k_basal + kMax*(mA/(mA+kMax))}.CELL[A+1,mA,d]
              + [d>0 & A>0] -> {generate_meAda,k_me*d*A}.CELL[A-1,mA+1,d-1]
              + {dna_dmg, k_dmg}.CELL[A,mA,d+1]
              + {startRep,k_division}.DIV[A,mA,d,0,0,0,0];
