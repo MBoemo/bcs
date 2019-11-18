@@ -1,0 +1,13 @@
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+
+r = 1;  //define the rate for movement
+rr = 2; //define a reaction rate
+
+//process definitions
+R[x,i] = {moveLeft, r}.R[x-1,i] + {moveRight, r}.R[x+1,i]
+       + [i==0] -> {@react![x], 1} 
+       + [i==1] -> {@react?[x], rr}.AB[x];
+AB[x] = {unbind, r}.(R[x+1,0] || R[x-1,1]);
+
+//initial state of the system
+R[5,0] || R[-5,1];

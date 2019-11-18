@@ -32,7 +32,9 @@ std::shared_ptr<HandshakeCandidate> HandshakeChannel::buildHandshakeCandidate( s
 	assert( (sendCand -> actionCandidate) -> identify() == "MessageSend");
 
 #if DEBUG_HANDSHAKE
-std::cout << "built handshake candidate on channel: " << _channelName << std::endl;
+std::cout << "built handshake candidate on channel: ";
+for (unsigned int dbg = 0; dbg < _channelName.size(); dbg++ ) std::cout << _channelName[dbg];
+std::cout << std::endl;
 std::cout << "sending sp: " << sendCand -> processInSystem << std::endl;
 std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 #endif
@@ -64,6 +66,8 @@ std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 	_possibleHandshakes_candidates2Sp[ hsCand ].push_back( sendCand -> processInSystem );
 	_possibleHandshakes_candidates2Sp[ hsCand ].push_back( receiveCand -> processInSystem );
 
+	assert(sendCand -> processInSystem != receiveCand -> processInSystem);
+
 	return hsCand;
 }
 
@@ -83,6 +87,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 		for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
 
 		for ( auto receive = _hsReceive_Sp2Candidates.begin(); receive != _hsReceive_Sp2Candidates.end(); receive++ ){
+
+			//can't have a handshake between the same sp
+			if (receive -> first == (*addedSend) -> processInSystem) continue;
 
 			for ( auto r_cand = (receive -> second).begin(); r_cand != (receive -> second).end(); r_cand++ ){
 
@@ -116,6 +123,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 		std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 
 		for ( auto send = _hsSend_Sp2Candidates.begin(); send != _hsSend_Sp2Candidates.end(); send++ ){
+
+			//can't have a handshake between the same sp
+			if (send -> first == (*addedReceive) -> processInSystem) continue;
 
 			for ( auto s_cand = (send -> second).begin(); s_cand != (send -> second).end(); s_cand++ ){
 
@@ -157,6 +167,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 
 
 		for ( auto r_cand = _receiveToAdd.begin(); r_cand != _receiveToAdd.end(); r_cand++ ){
+
+			//can't have a handshake between the same sp
+			if ((*addedSend) -> processInSystem == (*r_cand) -> processInSystem) continue;
 
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*r_cand) -> actionCandidate);
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
@@ -215,10 +228,9 @@ std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp
 			//remove this candidate from the sp->candidate map for other sp's that also use it so we don't count a candidate twice later
 			assert(_possibleHandshakes_candidates2Sp.count(*c) > 0);
 
-			std::list< SystemProcess * > otherSps = _possibleHandshakes_candidates2Sp[*c];
-			for ( auto otherSp = otherSps.begin(); otherSp != otherSps.end(); otherSp++ ){
+			for ( auto otherSp = _possibleHandshakes_candidates2Sp[*c].begin(); otherSp != _possibleHandshakes_candidates2Sp[*c].end(); otherSp++ ){
 
-				if ( *otherSp == sp ) continue; //we'll do this one later
+				if ( *otherSp == sp ) continue;//we'll do this one later
 		
 				//find the candidate in the candidate list for the other sp and erase it
 				auto itr = std::find( _possibleHandshakes_sp2Candidates[*otherSp].begin(), _possibleHandshakes_sp2Candidates[*otherSp].end(), *c );
@@ -233,7 +245,9 @@ std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp
 	if (locInSend != _hsSend_Sp2Candidates.end() ){
 
 #if DEBUG_HANDSHAKE
-std::cout << "chan " << _channelName << " removed " << _hsSend_Sp2Candidates[sp].size() << " possible sends associated with " << sp << std::endl;
+std::cout << "chan: ";
+for (unsigned int dbg = 0; dbg < _channelName.size(); dbg++ ) std::cout << _channelName[dbg];
+std::cout << " removed " << _hsSend_Sp2Candidates[sp].size() << " possible sends associated with " << sp << std::endl;
 #endif
 		_hsSend_Sp2Candidates.erase( locInSend );
 	}
@@ -242,7 +256,9 @@ std::cout << "chan " << _channelName << " removed " << _hsSend_Sp2Candidates[sp]
 	if (locInRec != _hsReceive_Sp2Candidates.end() ){
 
 #if DEBUG_HANDSHAKE
-std::cout << "chan " << _channelName << " removed " << _hsReceive_Sp2Candidates[sp].size() << " possible receives associated with " << sp << std::endl;
+std::cout << "chan: ";
+for (unsigned int dbg = 0; dbg < _channelName.size(); dbg++ ) std::cout << _channelName[dbg];
+std::cout << " removed " << _hsReceive_Sp2Candidates[sp].size() << " possible receives associated with " << sp << std::endl;
 #endif
 		_hsReceive_Sp2Candidates.erase( locInRec );
 	}
@@ -275,7 +291,9 @@ std::shared_ptr<HandshakeCandidate> HandshakeChannel::pickCandidate(double &runn
 void HandshakeChannel::addSendCandidate( std::shared_ptr<Candidate> sc ){
 
 #if DEBUG_HANDSHAKE
-std::cout << "adding hs send candidate on channel: " << _channelName << std::endl;
+std::cout << "adding hs send candidate on channel: ";
+for (unsigned int dbg = 0; dbg < _channelName.size(); dbg++ ) std::cout << _channelName[dbg];
+std::cout << std::endl;
 std::cout << "associated with sp: " << sc -> processInSystem << std::endl;
 #endif
 
@@ -295,7 +313,9 @@ std::cout << "associated with sp: " << sc -> processInSystem << std::endl;
 void HandshakeChannel::addReceiveCandidate( std::shared_ptr<Candidate> rc ){
 
 #if DEBUG_HANDSHAKE
-std::cout << "adding hs receive candidate on channel: " << _channelName << std::endl;
+std::cout << "adding hs receive candidate on channel: ";
+for (unsigned int dbg = 0; dbg < _channelName.size(); dbg++ ) std::cout << _channelName[dbg];
+std::cout << std::endl;
 std::cout << "associated with sp: " << rc -> processInSystem << std::endl;
 #endif
 

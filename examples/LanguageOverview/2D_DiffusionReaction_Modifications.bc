@@ -1,0 +1,25 @@
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//
+//To run:
+//   bin/bcs -s 5 -d 1000 -o 2D_DiffusionReaction_Modifications examples/LanguageOverview/2D_DiffusionReaction_Modifications.bc
+//
+//This will produce a 2D_DiffusionReaction_Modifications.simulation.bcs file with 5 simulations with a duration of 1000 time units
+
+r = 1;  //define the rate for movement
+rr = 2; //define a reaction rate
+rs = 0.1; //define a clock rate
+fast = 1000; //fast rate
+
+//process definitions
+R[x,y,m] = {moveLeft, r}.R[x-1,y,m] + {moveRight, r}.R[x+1,y,m]
+         + {moveUp, r}.R[x,y+1,m] + {moveDown, r}.R[x,y-1,m]
+         + {@modify![0], r}.R[x,y,m+1]
+         + [m>0] -> {@unmodify![0], r}.R[x,y,m-1]
+         + {@m?[x-2..x+2,y-2..y+2], rr}.AB[m]
+         + {@m![x,y], rr};
+M[i] = [i==0] -> {@unmodify?[0],1}.M[i] + [i==1] -> {@modify?[0],1}.M[i];
+C[] = {state![2], fast}.{state#[2], rs}.{state![1], fast}.{state#[1], rs}.C[];
+AB[m] = {state?[1..2](x), r*x}.(R[x+1,y,m] || R[x-1,y,m]);
+
+//initial state of the system
+10*R[0,0,0] || 10*R[5,5,0] || 10*R[0,5,0] || 10*R[5,0,0] || C[] || M[0] || M[1];

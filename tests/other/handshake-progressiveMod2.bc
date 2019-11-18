@@ -1,0 +1,11 @@
+//process definitions
+R[x,y,m] = {moveLeft, 1}.R[x-1,y,m] + {moveRight, 1}.R[x+1,y,m]
+         + {moveUp, 1}.R[x,y+1,m] + {moveDown, 1}.R[x,y-1,m]
+         + {@modify![0], 1}.R[x,y,m+1]
+         + [m>0] -> {@unmodify![0], 1}.R[x,y,m-1];
+         + {@m?[x-2..x+2,y-2..y+2], 1}
+         + {@m![x,y], 1};
+M[i] = [i==0] -> {@unmodify?[0],1}.M[i] + [i==1] -> {@modify?[0],1}.M[i];
+
+//initial state of the system
+R[5,0,0] || M[0] || M[1];

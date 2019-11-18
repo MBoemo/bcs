@@ -1,0 +1,14 @@
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//
+//To run:
+//   bin/bcs -s 5 -d 1000 -o 2D_DiffusionReaction_Modifications examples/LanguageOverview/2D_DiffusionReaction_Modifications.bc
+//
+//This will produce a 2D_DiffusionReaction_Modifications.simulation.bcs file with 5 simulations with a duration of 1000 time units
+
+//process definitions
+R[m] = {@modify![0], 1}.R[m+1]
+     + [m>0] -> {@unmodify![0], 1}.R[m-1];
+M[i] = [i==0] -> {@unmodify?[0],1}.M[i] + [i==1] -> {@modify?[0],1}.M[i];
+
+//initial state of the system
+R[0] || M[0] || M[1];

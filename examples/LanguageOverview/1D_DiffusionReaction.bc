@@ -1,0 +1,19 @@
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//
+//To run:
+//   bin/bcs -s 5 -m 1000 -o 1D_DiffusionReaction examples/LanguageOverview/1D_DiffusionReaction.bc
+//
+//This will produce a 1D_DiffusionReaction.simulation.bcs file with 5 simulations with a maximum of 1000 state transitions each
+
+r = 1;  //define the rate for movement
+rr = 2; //define a reaction rate
+
+//process definitions
+A[x] = {moveLeft, r}.A[x-1] + {moveRight, r}.A[x+1]
+     + {@react![x], 1};
+B[x] = {moveLeft, r}.B[x-1] + {moveRight, r}.B[x+1]
+     + {@react?[x], rr}.AB[x];
+AB[x] = {unbind, r}.(A[x+1] || B[x-1]);
+
+//initial state of the system
+A[5] || B[-5];

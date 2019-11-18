@@ -132,6 +132,9 @@ std::cout << "Starting GateBlock parsing on: " << t -> value() << std::endl;
 	std::string wholeGate = t -> value();
 	std::string betweenBrackets = wholeGate.substr( wholeGate.find("[") + 1, wholeGate.find("]") - wholeGate.find("[") - 1 );
 	std::vector< Token * > tokenisedGate = scanLine( betweenBrackets, t -> getLine(), t -> getColumn() );
+
+	if (tokenisedGate.size() == 0) throw SyntaxError( t, "Gate condition cannot be empty.");
+
 	_RPNexpression = shuntingYard( tokenisedGate );
 
 #if DEBUG
@@ -202,6 +205,9 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
 	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
+	
+	if (tokenisedParamArithmetic.size() == 0) throw SyntaxError( t, "Message must send a comma-separated list of at least one value.");
+
 	for ( unsigned int i = 0; i < _RPNexpressions.size(); i++ ) _RPNexpressions[i] = shuntingYard(_RPNexpressions[i]);
 
 #if DEBUG
@@ -286,6 +292,9 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
 	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
+
+	if (tokenisedParamArithmetic.size() == 0) throw SyntaxError( t, "Message must receive comma-separated list of at least one value or set.");
+
 	for ( unsigned int i = 0; i < _RPNexpressions.size(); i++ ) _RPNexpressions[i] = shuntingYard(_RPNexpressions[i]);
 
 #if DEBUG

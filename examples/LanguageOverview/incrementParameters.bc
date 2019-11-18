@@ -1,0 +1,13 @@
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//To run:
+//   bin/bcs -s 5 -m 10 -o incrementParameters examples/LanguageOverview/incrementParameters.bc
+//
+//This will produce a incrementParameters.simulation.bcs file with 5 simulations that ran for a maximum of 10 state transitions each 
+
+r = 1; //define a rate
+
+//process definition
+A[i,j] = {changeParameters,r}.A[i+1,j*2];
+
+//give the initial state of the system
+A[0,1];

@@ -23,7 +23,6 @@ parser.add_argument('-m', metavar='maxSimulation',nargs=1,help="Maximum number o
 parser.add_argument('filename',help="Output .simulation.bcs file from bcs.")
 args = parser.parse_args(sys.argv[1:])
 argDict = vars(args)
-print argDict
 
 
 #MAIN-------------------------------------------------------------------------------------------------
@@ -39,7 +38,7 @@ for line in f:
 
 		#do the plotting
 		if simCount > 0:
-			plt.scatter(x,y)
+			plt.scatter(x,y,alpha=0.3)
 
 		x = []
 		y = []
@@ -63,11 +62,11 @@ for line in f:
 	if action in argDict['a'] and process in argDict['p'] and argDict['i'][0] in parameters:
 		y.append(parameters[argDict['i'][0]])
 		x.append(time)
-print x
-print y
+
+
 #save figure
 if len(x) > 0 and len(y) > 0:
-	plt.scatter(x,y)
+	plt.scatter(x,y,alpha=0.3)
 plt.xlabel('Time')
 plt.ylabel(argDict['i'][0])
 plt.savefig(argDict['o'][0])

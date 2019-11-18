@@ -1,0 +1,11 @@
+//EXPECTED BEHAVIOUR:
+//A single process can make a choice between sending and receiving a handshake on the same channel.  No handshake should happen.
+
+//WHAT IT TESTS:
+// -handshake candidates are correct with respect to the choice operator
+
+//process definitions
+process[i] = {@msg![i],3} + {@msg?[i],2};
+
+//system line
+process[0];
