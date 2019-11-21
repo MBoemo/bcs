@@ -104,7 +104,7 @@ class GateBlock: public Block {
 class MessageReceiveBlock: public Block {
 
 	protected:
-		bool _handshake, _check, _hasBindingVar=false;
+		bool _handshake, _check, _usesSets=false,_hasBindingVar=false;
 		std::string _owningProcess;
 		Token *_underlyingToken;
 		std::vector< std::vector< Token * > > _channelNames;
@@ -128,6 +128,7 @@ class MessageReceiveBlock: public Block {
 		bool isHandshake( void ) const { return _handshake; }
 		bool isCheck( void ) const { return _check; }
 		bool bindsVariable( void ) const { return _hasBindingVar; }
+		bool usesSets( void ) const { return _usesSets; }
 		std::vector< std::vector< Token * > > getChannelName( void ) const { return _channelNames; }
 		std::vector< std::string > getBindingVariable( void ) const { return _bindingVariables; }
 		std::vector< std::vector< Token * > > getSetExpression( void ) const { return _RPNexpressions; }

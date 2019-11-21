@@ -41,7 +41,13 @@ _database.printContents();
 			cand -> rate = rate.doubleCast();
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			bool canReceive = _database.check( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			bool canReceive;
+			if (mrb -> usesSets()){
+				canReceive = _database.check( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			}
+			else{
+				canReceive = _database.check_quick( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			}
 
 			if ( not canReceive ){//only do a beacon check if you can't receive
 
@@ -50,7 +56,7 @@ _database.printContents();
 				rateSum += rate.doubleCast();
 			}
 			else _potentialBeaconReceiveCands[sp].push_back( cand );
-	
+
 #if DEBUG
 std::cout << ">>>>>>>>>>>>Adding candidate: Beacon check ";
 Token *t = b -> getToken();
@@ -62,7 +68,13 @@ std::cout << ">>>>>>>>>>>>Can receive? " << canReceive << std::endl;
 		else if ( not mrb -> isHandshake() ){ //beacon receive
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			std::vector< std::vector< int > > matchingParameters = _database.findAll( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			std::vector< std::vector< int > > matchingParameters;
+			if (mrb -> usesSets()){
+				matchingParameters = _database.findAll( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			}
+			else{
+				matchingParameters = _database.findAll_trivial( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+			}
 
 			//build a candidate for each possible beacon receive on this parameter set
 			for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){
@@ -190,7 +202,13 @@ _database.printContents();
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			SystemProcess *sp = (*cand) -> processInSystem;
 
-			bool canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			bool canReceive;
+			if (mrb -> usesSets()){
+				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			}
+			else{
+				canReceive = _database.check_quick( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			}
 
 			if ( (not canReceive and not mrb -> isCheck()) or (canReceive and mrb -> isCheck()) ){
 
@@ -217,7 +235,15 @@ _database.printContents();
 			SystemProcess *sp = (*cand) -> processInSystem;
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (*cand) -> actionCandidate );
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
-			bool canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+
+			bool canReceive;
+			if (mrb -> usesSets()){
+				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			}
+			else{
+				canReceive = _database.check_quick( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+			}
+
 			if (mrb -> isCheck() and not canReceive){
 
 				_activeBeaconReceiveCands[sp].push_back(*cand);
@@ -229,7 +255,13 @@ _database.printContents();
 			}
 			else if (not mrb -> isCheck()){
 
-				std::vector< std::vector< int > > matchingParameters = _database.findAll( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				std::vector< std::vector< int > > matchingParameters;
+				if (mrb -> usesSets()){
+					matchingParameters = _database.findAll( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				}
+				else{
+					matchingParameters = _database.findAll_trivial( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				}
 
 				//build a candidate for each possible beacon receive on this parameter set
 				for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){

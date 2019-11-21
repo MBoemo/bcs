@@ -98,6 +98,25 @@ class communicationDatabase{
 			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
 			else return false;
 		}
+		inline bool check_quick( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+
+			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
+
+			std::vector< int > valueToFind;
+
+			//get the one value that the beacon can check
+			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
+				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+				valueToFind.push_back(n.getInt());
+			}
+			
+			std::set< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
+
+			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
+			else return false;
+		}
 		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 			std::vector< std::vector< int > > out;
@@ -127,6 +146,25 @@ class communicationDatabase{
 
 			return out;
 		}
+		inline std::vector< std::vector< int > > findAll_trivial( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+
+			std::vector< std::vector< int > > out;
+
+			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
+
+			std::vector< int > value;
+
+			//get the one value that the beacon can check
+			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
+				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+				value.push_back(n.getInt());
+			}
+
+			return out;
+		}
+
 		void printContents( void ){ //for testing
 
 			std::cout << ">>>>>>>>>>>>DATABASE CONTENTS: ";

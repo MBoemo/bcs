@@ -9,6 +9,8 @@
 #ifndef NUMERICAL_H
 #define NUMERICAL_H
 
+#include <limits>
+
 class Numerical{
 
 	private:
@@ -19,7 +21,8 @@ class Numerical{
 
 	public:
 		Numerical(void){
-
+			dVal = std::numeric_limits<double>::min();
+			iVal = std::numeric_limits<int>::min();
 			isDouble_b = false;
 			isInt_b = false;
 		}

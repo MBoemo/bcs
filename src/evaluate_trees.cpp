@@ -482,6 +482,12 @@ inline bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVar
 
 Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
+	//quick exit for simple cases
+	if (inputRPN.size() == 1){
+		Numerical result = substituteVariable( inputRPN[0], param2value, globalVariables, localVariables );
+		return result;
+	}
+
 	std::stack<RPNoperand *> evalStack;	
 
 	for ( auto t = inputRPN.begin(); t < inputRPN.end(); t++ ){

@@ -293,6 +293,15 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
 	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
 
+	//check if it uses set operations so we can optimise it if not
+	for (auto paramToken = tokenisedParamArithmetic.begin(); paramToken < tokenisedParamArithmetic.end(); paramToken++){
+
+		if ( (*paramToken) -> identify() == "SetOperation" ){
+			_usesSets = true;
+			break;
+		}
+	}
+
 	if (tokenisedParamArithmetic.size() == 0) throw SyntaxError( t, "Message must receive comma-separated list of at least one value or set.");
 
 	for ( unsigned int i = 0; i < _RPNexpressions.size(); i++ ) _RPNexpressions[i] = shuntingYard(_RPNexpressions[i]);

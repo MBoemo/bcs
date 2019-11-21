@@ -2,14 +2,14 @@ CC = gcc
 CXX = g++
 DEBUG = -g
 LIBFLAGS =
-CXXFLAGS = -Wall -O3 -fopenmp -std=c++11 $(DEBUG)
-CFLAGS = -Wall -std=c99 -O3 $(DEBUG)
+CXXFLAGS = -Wall -O2 -fopenmp -std=c++11 $(DEBUG)
+CFLAGS = -Wall -std=c99 -O2 $(DEBUG)
 
 #to use openMP on OSX
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
 	CXX = /usr/local/opt/llvm/bin/clang
-	CXXFLAGS = -Wall -O3 -std=c++11 $(DEBUG) -I/usr/local/opt/llvm/include -fopenmp -lstdc++
+	CXXFLAGS = -Wall -O2 -std=c++11 $(DEBUG) -I/usr/local/opt/llvm/include -fopenmp -lstdc++
 	LIBFLAGS = -L/usr/local/opt/llvm/lib
 endif
 
