@@ -296,6 +296,7 @@ _database.printContents();
 			else cand++;
 		}
 	}
+
 #if DEBUG
 std::cout << "Updating candidates (third)...." << std::endl;
 _database.printContents();

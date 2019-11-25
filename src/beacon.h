@@ -9,6 +9,7 @@
 #ifndef BEACON_H
 #define BEACON_H
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <map>
@@ -53,7 +54,7 @@ struct BetweenBounds {
 class communicationDatabase{
 
 	private:
-		std::map< int, std::set< std::vector< int > > > _arity2entries;
+		std::map< int, std::vector< std::vector< int > > > _arity2entries;
 		GlobalVariables _globalVars;
 
 	public:
@@ -62,21 +63,27 @@ class communicationDatabase{
 			if ( _arity2entries.count(i.size()) == 0 ){
 
 				_arity2entries[i.size()] = {i};
+				sortDatabase(i.size());
 			}			
 			else{
-
-				_arity2entries[i.size()].insert(i);
+				bool found = std::binary_search(_arity2entries[i.size()].begin(), _arity2entries[i.size()].end(), i );
+				if (not found){
+					_arity2entries[i.size()].push_back(i);
+					sortDatabase(i.size());
+				}
 			}
 		}
 		inline void pop( std::vector<int> i ){
 
 			if ( _arity2entries.count( i.size() ) > 0 ){
 
-				std::set< std::vector< int > >::iterator pos = _arity2entries[i.size()].find( i );
+				bool found = std::binary_search(_arity2entries[i.size()].begin(), _arity2entries[i.size()].end(), i );
 
-				if (pos != _arity2entries[i.size()].end()){
+				if (found){
 
+					std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(),i);
 					_arity2entries[i.size()].erase(pos);
+					sortDatabase(i.size());
 				}
 			}
 		}
@@ -93,7 +100,7 @@ class communicationDatabase{
 				bounds.push_back(b);
 			}
 			
-			std::set< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
+			std::vector< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
 
 			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
 			else return false;
@@ -112,10 +119,8 @@ class communicationDatabase{
 				valueToFind.push_back(n.getInt());
 			}
 			
-			std::set< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
-			else return false;
+			bool found = std::binary_search(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
+			return found;
 		}
 		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
@@ -132,7 +137,7 @@ class communicationDatabase{
 				bounds.push_back(b);
 			}
 
-			std::set< std::vector< int > >::iterator pos = _arity2entries[setExpressions.size()].begin();
+			std::vector< std::vector< int > >::iterator pos = _arity2entries[setExpressions.size()].begin();
 			while (pos != _arity2entries[setExpressions.size()].end()){
 
 				pos = std::find_if(pos, _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
@@ -162,16 +167,24 @@ class communicationDatabase{
 				value.push_back(n.getInt());
 			}
 
+			bool found = std::binary_search(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), value );
+			if (found){
+				out.push_back(value);
+				return out;
+			}
 			return out;
 		}
-
+		void sortDatabase(int arity){
+	
+			std::sort(_arity2entries.at(arity).begin(),_arity2entries.at(arity).end());
+		}
 		void printContents( void ){ //for testing
 
 			std::cout << ">>>>>>>>>>>>DATABASE CONTENTS: ";
 
 			for ( auto dbValues = _arity2entries.begin(); dbValues != _arity2entries.end(); dbValues++ ){ //go through arities	
 
-				for ( auto entry = (dbValues -> second).begin(); entry != (dbValues -> second).end(); entry++ ){
+				for ( auto entry = (dbValues -> second).begin(); entry < (dbValues -> second).end(); entry++ ){
 
 					for ( unsigned int i = 0; i < (*entry).size(); i++ ) std::cout << (*entry)[i] << " ";
 
