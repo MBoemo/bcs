@@ -59,6 +59,9 @@ class communicationDatabase{
 	public:
 		inline void push( std::vector<int> i ){
 
+			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
+			if (pos != _arity2entries[i.size()].end()) return;
+
 			if ( _arity2entries.count(i.size()) == 0 ){
 
 				_arity2entries[i.size()] = {i};
@@ -162,7 +165,13 @@ class communicationDatabase{
 				value.push_back(n.getInt());
 			}
 
-			return out;
+			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), value );
+
+			if ( pos != _arity2entries[setExpressions.size()].end() ){
+				out.push_back(value);
+				return out;
+			}
+			else return out;
 		}
 
 		void printContents( void ){ //for testing
