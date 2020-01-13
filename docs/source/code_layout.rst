@@ -21,7 +21,7 @@ are all acceptable.  Variables may be assigned either a float or an int, so assi
 
    x = 3.452;
 
-is certainly acceptable.  Variable names must either lead with an underscore or a letter.  Thereafter, they can contain letters and numbers.  However, leading with a number is not acceptable.  The following variable names are valid: ::
+is acceptable. Variable names must either lead with an underscore or a letter. Thereafter, they can contain letters and numbers. However, leading with a number is not allowed. The following variable names are valid: ::
 
    myVar
    _myVar

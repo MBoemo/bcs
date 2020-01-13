@@ -1,70 +1,195 @@
 
-<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta charset="utf-8" />
-    <title>Processes &#8212; bcs v1.0 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Processes &mdash; bcs v1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="The System Line" href="system_line.html" />
-    <link rel="prev" title="Formatting" href="code_layout.html" />
+    <link rel="prev" title="Formatting" href="code_layout.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
    
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
-  </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
           
 
-          <div class="body" role="main">
+          
+            <a href="index.html" class="icon icon-home"> bcs
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code_layout.html">Formatting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Processes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#process-definitions-and-combinators">Process Definitions and Combinators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters-and-gates">Parameters and Gates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="system_line.html">The System Line</a></li>
+<li class="toctree-l1"><a class="reference internal" href="communication.html">Communication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="functions.html">Built-in Functions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bcs</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Processes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/processes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="processes">
 <span id="id1"></span><h1>Processes<a class="headerlink" href="#processes" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="process-definitions-and-combinators">
 <h2>Process Definitions and Combinators<a class="headerlink" href="#process-definitions-and-combinators" title="Permalink to this headline">¶</a></h2>
-<p>In the beacon calculus, components within a biological system are modelled as processes that can perform actions.  An action is an ordered pair that specifies the action name followed by the rate.  For example, we might define a process P as follows:</p>
+<p>In the Beacon Calculus, components within a biological system are modelled as processes that can perform actions.  An action is an ordered pair that specifies the action name followed by the rate.  For example, we might define a process P as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="n">exampleAction</span><span class="p">,</span> <span class="mi">5</span><span class="p">};</span>
 </pre></div>
 </div>
-<p>This process can perform a single action called “exampleAction” at rate 5, where rates are always the parameters of an exponential distribution.  Once this process performs exampleAction, it cannot perform any other actions.  It is therefore said to be deadlocked and is removed from the system.</p>
+<p>This process can perform a single action called <code class="docutils literal notranslate"><span class="pre">exampleAction</span></code> at rate <code class="docutils literal notranslate"><span class="pre">5</span></code>, where rates are always the parameters of an exponential distribution.  Once this process performs <code class="docutils literal notranslate"><span class="pre">exampleAction</span></code>, it cannot perform any other actions.  It is therefore said to be deadlocked and is removed from the system.</p>
 <p>A process that can only perform one action isn’t particularly useful, especially for biological systems.  We need a way to stitch series of actions together so that processes can perform complex behaviours.  We define the following three combinators:</p>
 <ul class="simple">
-<li><p>Prefix “.”, where P[] = {a,ra}.{b,rb} is a process that performs action a at rate ra and then, once it has finished, performs action b at rate rb.  Prefix is therefore used for actions that should happen in sequence.</p></li>
-<li><p>Choice “+”, where P[] = {a,ra} + {b,rb} is a process that makes an exclusive choice between performing action a at rate ra and action b at rate rb; it cannot perform both.  Note that the probability of picking action a is equal to ra/(ra+rb), so we can bias which outcome is more likely by scaling the actions’ relative rates.</p></li>
-<li><p>Parallel “||”, where P[] = {a,ra} || {b,rb} is a process where actions a and b are performed in parallel at their respective rates.</p></li>
+<li><p>Prefix <code class="docutils literal notranslate"><span class="pre">.</span></code>, where <code class="docutils literal notranslate"><span class="pre">P[]</span> <span class="pre">=</span> <span class="pre">{a,ra}.{b,rb}</span></code> is a process that performs action <code class="docutils literal notranslate"><span class="pre">a</span></code> at rate <code class="docutils literal notranslate"><span class="pre">ra</span></code> and then, once it has finished, performs action <code class="docutils literal notranslate"><span class="pre">b</span></code> at rate <code class="docutils literal notranslate"><span class="pre">rb</span></code>.  Prefix is therefore used for actions that should happen in sequence.</p></li>
+<li><p>Choice <code class="docutils literal notranslate"><span class="pre">+</span></code>, where <code class="docutils literal notranslate"><span class="pre">P[]</span> <span class="pre">=</span> <span class="pre">{a,ra}</span> <span class="pre">+</span> <span class="pre">{b,rb}</span></code> is a process that makes an exclusive choice between performing action <code class="docutils literal notranslate"><span class="pre">a</span></code> at rate <code class="docutils literal notranslate"><span class="pre">ra</span></code> and action <code class="docutils literal notranslate"><span class="pre">b</span></code> at rate <code class="docutils literal notranslate"><span class="pre">rb</span></code>; it cannot perform both.  Note that the probability of picking action a is equal to <code class="docutils literal notranslate"><span class="pre">ra/(ra+rb)</span></code>, so we can bias which outcome is more likely by scaling the actions’ relative rates.</p></li>
+<li><p>Parallel <code class="docutils literal notranslate"><span class="pre">||</span></code>, where <code class="docutils literal notranslate"><span class="pre">P[]</span> <span class="pre">=</span> <span class="pre">{a,ra}</span> <span class="pre">||</span> <span class="pre">{b,rb}</span></code> is a process where actions <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> are performed in parallel at their respective rates.</p></li>
 </ul>
 <p>Using these three combinators, we can now define more complex processes.  In the following example,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="p">,</span><span class="n">ra</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">b</span><span class="p">,</span><span class="n">rb</span><span class="p">}</span> <span class="o">||</span> <span class="p">{</span><span class="n">c</span><span class="p">,</span><span class="n">rc</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">d</span><span class="p">,</span><span class="n">rd</span><span class="p">}</span> <span class="o">+</span> <span class="p">{</span><span class="n">e</span><span class="p">,</span><span class="n">re</span><span class="p">}</span><span class="o">.</span><span class="p">({</span><span class="n">f</span><span class="p">,</span><span class="n">rf</span><span class="p">}</span> <span class="o">+</span> <span class="n">g</span><span class="p">,</span><span class="n">rg</span><span class="p">});</span>
 </pre></div>
 </div>
-<p>we make an exclusive choice between actions c and e.  If we pick c, then we perform action d.  If we pick e, then we make another choice between f and g.  All the while, in parallel, we perform action a followed by action b.</p>
+<p>we make an exclusive choice between actions <code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">e</span></code>.  If we pick <code class="docutils literal notranslate"><span class="pre">c</span></code>, then we go on to perform action <code class="docutils literal notranslate"><span class="pre">d</span></code>.  If we pick <code class="docutils literal notranslate"><span class="pre">e</span></code>, then we make another choice between <code class="docutils literal notranslate"><span class="pre">f</span></code> and <code class="docutils literal notranslate"><span class="pre">g</span></code>.  All the while, in parallel, we perform action <code class="docutils literal notranslate"><span class="pre">a</span></code> followed by action <code class="docutils literal notranslate"><span class="pre">b</span></code>.</p>
 </div>
 <div class="section" id="parameters-and-gates">
 <h2>Parameters and Gates<a class="headerlink" href="#parameters-and-gates" title="Permalink to this headline">¶</a></h2>
 <p>Oftentimes, processes need to keep track of certain quantities.  For example, if a process models the amount of a certain chemical reactant in a system, the process must be able to keep a count of how many molecules of this reactant are present over time.  If a process models a DNA replication fork, it has to keep track of where the replication fork is on the chromosome.  This is achieved through parameters, which are values that a process keeps track of.  Parameters are specified between square brackets, and processes can increase or decrease the value of their parameters over time.  They can also use the value of their parameters in the computation of rates.</p>
-<p>Suppose there is a car which is at a particular location.  We can express this as Car[i], where the Car process has parameter i which specifies the car’s location.  We can specify movement of the car through recursion.  The following process models a car that drives at rate 0.1, and increases its parameter value as it moves.</p>
+<p>Suppose there is a car which is at a particular location.  We can express this as <code class="docutils literal notranslate"><span class="pre">Car[i]</span></code>, where the <code class="docutils literal notranslate"><span class="pre">Car</span></code> process has parameter <code class="docutils literal notranslate"><span class="pre">i</span></code> which specifies its location.  We can specify movement of the car through recursion.  The following process models a car that drives at rate 0.1, and increases its parameter value as it moves.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Car</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">drive</span><span class="p">,</span><span class="mf">0.1</span><span class="p">}</span><span class="o">.</span><span class="n">Car</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>This car, as it is modelled above, will keep driving without stopping.  We may wish to specify, for example, that the car should stop when it reaches a bus stop at i=10.  To express this, we use a gate:</p>
+<p>This car, as it is modelled above, will keep driving without stopping.  We may wish to specify, for example, that the car should stop when it reaches a bus stop at <code class="docutils literal notranslate"><span class="pre">i=10</span></code>.  To express this, we use a gate:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Car</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="p">{</span><span class="n">drive</span><span class="p">,</span><span class="mf">0.1</span><span class="p">}</span><span class="o">.</span><span class="n">Car</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>The gate in front of the drive action specifies that this action can only be performed if the gate’s condition is satisfied.  In this case, the value of the car’s parameter i must be less than 10.  If the car starts at i=0, then the car continues driving until i=10 at which time the gate’s condition is no longer satisfied.  The car can no longer perform any actions, so the process deadlocks and the simulation stops.</p>
+<p>The gate in front of the drive action specifies that this action can only be performed if the gate’s condition is satisfied.  In this case, the value of the car’s parameter <code class="docutils literal notranslate"><span class="pre">i</span></code> must be less than 10.  If the car starts at <code class="docutils literal notranslate"><span class="pre">i=0</span></code>, then the car continues driving until <code class="docutils literal notranslate"><span class="pre">i=10</span></code> at which time the gate’s condition is no longer satisfied.  The car can no longer perform any actions, so the process deadlocks and the simulation stops.</p>
 <p>In addition to the less than comparison used here, bcs supports the following logical operators:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, less than or equal to,</p></li>
@@ -73,85 +198,59 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, greater than,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, greater than or equal to,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&amp;</span></code>, logical and,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">|</span></code>, logical or.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">|</span></code>, logical or,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~</span></code>, logical not.</p></li>
 </ul>
-<p>Note that the above example only made sense when we considered the car’s starting location of i=0.  What if the car were to start at i=15?  Then the Car process would deadlock immediately.  Clearly, we need some way of specifying the initial state of the system if we’re going to make useful models.</p>
 </div>
 </div>
 
 
+           </div>
+           
           </div>
-          
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">bcs</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="code_layout.html">Formatting</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Processes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="system_line.html">The System Line</a></li>
-<li class="toctree-l1"><a class="reference internal" href="communication.html">Communication</a></li>
-<li class="toctree-l1"><a class="reference internal" href="functions.html">Built-in Functions</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="code_layout.html" title="previous chapter">Formatting</a></li>
-      <li>Next: <a href="system_line.html" title="next chapter">The System Line</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="system_line.html" class="btn btn-neutral float-right" title="The System Line" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="code_layout.html" class="btn btn-neutral float-left" title="Formatting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
     </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  
 
+  <hr/>
 
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Michael A. Boemo
 
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-
-
-
+</footer>
 
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &copy;2020, Michael A. Boemo.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/processes.rst.txt"
-          rel="nofollow">Page source</a>
-    </div>
 
-    
+    </section>
 
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
     
-  </body>
+   
+
+</body>
 </html>
