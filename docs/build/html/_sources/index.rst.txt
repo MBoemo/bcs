@@ -17,6 +17,9 @@ Beacon Calculus Simulator (bcs)
    system_line
    communication
    functions
+   simulation
+   plotting
+   examples
 
 Publications
 ------------

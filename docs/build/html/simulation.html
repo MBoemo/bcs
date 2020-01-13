@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Simulation &mdash; bcs v1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plotting" href="plotting.html" />
+    <link rel="prev" title="Built-in Functions" href="functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> bcs
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code_layout.html">Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processes.html">Processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="system_line.html">The System Line</a></li>
+<li class="toctree-l1"><a class="reference internal" href="communication.html">Communication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="functions.html">Built-in Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#algorithm">Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#casting">Casting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bcs</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Simulation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/simulation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="simulation">
+<span id="id1"></span><h1>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<p>The bcs executable accepts a number of arguments to control the simulation of a Beacon Calculus model:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-t</span></code>, the number of threads. Simulations can be run independently on separate threads, so multithreading can speed up runtimes considerably. We recommend using as many threads as you have available if the simulation is large.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m</span></code>, the maximum number of actions allowed before the simulation is stopped. If <code class="docutils literal notranslate"><span class="pre">-m</span> <span class="pre">100</span></code> is specified, the simulation will stop (even if it is not deadlocked) after a total of 100 actions have been performed by processes in the system. In practice, this is useful for checking a model’s behaviour.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d</span></code>, time at which the simulation stops. If <code class="docutils literal notranslate"><span class="pre">-d</span> <span class="pre">60</span></code> is specified, the simulation will end when the time is equal to 60, or before if the system has deadlocked.</p></li>
+</ul>
+</div>
+<div class="section" id="algorithm">
+<h2>Algorithm<a class="headerlink" href="#algorithm" title="Permalink to this headline">¶</a></h2>
+<p>Models are simulated using a modified version of the <a class="reference external" href="https://en.wikipedia.org/wiki/Gillespie_algorithm">Gillespie algorithm</a>, and are therefore subject to some of the algorithm’s disadvantages.  In particular, systems with long simulation durations and lots of high-rate actions can head to slow bcs runtimes.  Ways to improve this are currently in development.</p>
+</div>
+<div class="section" id="casting">
+<h2>Casting<a class="headerlink" href="#casting" title="Permalink to this headline">¶</a></h2>
+<p>As a simulation runs, arithmetic functions can be applied to parameters, channel names, and sent/received values. Each of these can be either ints or floats. When a function acts on both ints and floats, the result is upcast to a float.  For example in the following bcs code, process <code class="docutils literal notranslate"><span class="pre">P</span></code> starts with <code class="docutils literal notranslate"><span class="pre">i=0</span></code> (an int) but after it is multiplied by 2.0 in the first recursion, the type of <code class="docutils literal notranslate"><span class="pre">i</span></code> is a float thereafter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span><span class="n">process</span> <span class="n">definition</span>
+<span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">multiplyParameter</span><span class="p">,</span><span class="mf">1.0</span><span class="p">}</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mf">2.0</span><span class="p">];</span>
+
+<span class="o">//</span><span class="n">system</span> <span class="n">line</span>
+<span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>In any operation where comparisons must be made (gates, handshakes, and beacons) values must be ints, and bcs will throw an error if passed a float. It is perfectly acceptable to use a float as a parameter, where it may be used to scale an action rate, etc.</p>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<p>Simulation outputs are always written in a file with the <code class="docutils literal notranslate"><span class="pre">.simulation.bcs</span></code> extension and the prefix specified by the user using the <code class="docutils literal notranslate"><span class="pre">-o</span></code> flag. Each simulation begins with the line <code class="docutils literal notranslate"><span class="pre">&gt;=======</span></code>.  Each line is an action that was performed by a process in the system, and the tab-delimited columns, from left to right, specify:</p>
+<ul class="simple">
+<li><p>the time in the simulation when the action happened,</p></li>
+<li><p>the name of the action that was performed (or the channel name, if it was a beacon or handshake action),</p></li>
+<li><p>the name of the process that performed the action,</p></li>
+<li><p>the parameter values (if any) of that process at the time when the action was performed.</p></li>
+</ul>
+<p>For example, the output line</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.315113</span>  <span class="n">act1</span>    <span class="n">P</span>       <span class="n">i</span>       <span class="mi">2</span>       <span class="n">j</span>       <span class="mi">5</span>
+</pre></div>
+</div>
+<p>indicates that an action named <code class="docutils literal notranslate"><span class="pre">act1</span></code> was performed by process <code class="docutils literal notranslate"><span class="pre">P</span></code> at time 0.315113.  Process <code class="docutils literal notranslate"><span class="pre">P</span></code> has two parameters, <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code>, and when this action was performed, <code class="docutils literal notranslate"><span class="pre">i=2</span></code> and <code class="docutils literal notranslate"><span class="pre">j=5</span></code>.</p>
+<p>See <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a> for a further example of the output file format.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="plotting.html" class="btn btn-neutral float-right" title="Plotting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="functions.html" class="btn btn-neutral float-left" title="Built-in Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Michael A. Boemo
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

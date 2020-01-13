@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; bcs v1.0 documentation</title>
+  <title>Examples &mdash; bcs v1.0 documentation</title>
   
 
   
@@ -35,8 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Quickstart" href="quickstart.html" />
-    <link rel="prev" title="Beacon Calculus Simulator (bcs)" href="index.html" /> 
+    <link rel="prev" title="Plotting" href="plotting.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -82,7 +81,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code_layout.html">Formatting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="processes.html">Processes</a></li>
@@ -91,7 +90,7 @@
 <li class="toctree-l1"><a class="reference internal" href="functions.html">Built-in Functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a></li>
 </ul>
 
             
@@ -137,13 +136,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Installation</li>
+      <li>Examples</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/examples.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -156,18 +155,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="installation">
-<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>bcs is hosted on Github.  To clone bcs into your current directory, run​</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/MBoemo/bcs.git​
-git checkout v1.0
-</pre></div>
-</div>
-<p>Navigate to the bcs directory and run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span>
-</pre></div>
-</div>
-<p>This will compile bcs and put a binary into the bcs/bin directory.  bcs was written in C++11 and uses OpenMP for parallel computation.  These are both standard on most systems and there are no other thirdparty dependencies.  bcs was tested to compile on both Linux systems and OSX.</p>
+  <div class="section" id="examples">
+<span id="id1"></span><h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>New users are encouraged to look in the bcs/tests directory, which contains dozens of very simple models with the expected output and behaviour described in the comments.</p>
+<p>We included examples from different fields of biology in the main <a class="reference external" href="https://www.biorxiv.org/content/10.1101/579029v2">Beacon Calculus manuscript</a>, which are:</p>
+<ul class="simple">
+<li><p>simple reaction between two chemical species (see section “Language Overview”),</p></li>
+<li><p>DNA replication in <cite>S. cerevisiae</cite> (see section “DNA Replication”),</p></li>
+<li><p>a population of cells responding to methylation damage (see section “Cellular Response to DNA Damage”),</p></li>
+<li><p>receptor multisite phosphorylation and ultrasensitivity (see section “Multisite Phosphorylation”),</p></li>
+<li><p>kinesin stepping down a microtubule (see Supplemental Information).</p></li>
+</ul>
+<p>Full source code is provided for each of these examples, along with a line-by-line description of the processes and expected behaviour of the model.  For convenience, the source code for these models are provided in the bcs/examples directory, along with python scripts that create plots similar to those in the manuscript.</p>
+<p>As we develop more applications and examples over time, we will post them here.</p>
 </div>
 
 
@@ -178,10 +178,8 @@ git checkout v1.0
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quickstart" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="index.html" class="btn btn-neutral float-left" title="Beacon Calculus Simulator (bcs)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="plotting.html" class="btn btn-neutral float-left" title="Plotting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
