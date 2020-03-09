@@ -10,3 +10,8 @@ src/*.
 .*swp
 .*swo
 .*swm
+
+#ide
+.settings*
+.cproject
+.project

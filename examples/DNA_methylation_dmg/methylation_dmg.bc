@@ -2,7 +2,7 @@
 
 k_basal = 0.03125; //1.25 molecules per generation, 1.25*(1/40min)
 k_me = 0.0375; //1.5 molecules per generation, 1.5*(1/40min)
-k_dmg = 0.0001;//0.1; //aquire DNA damage
+k_dmg = 0.0001;// 0.1;//aquire DNA damage
 k_division = 0.025;//E.coli replication time about 40 min
 kMax = 10.0; //max rate to generate Ada
 fast = 10000;

@@ -1,6 +1,6 @@
 //----------------------------------------------------------
-// Copyright 2017 University of Oxford
-// Written by Michael A. Boemo (michael.boemo@path.ox.ac.uk)
+// Copyright 2017-2020 University of Oxford
+// Written by Michael A. Boemo (mb915@cam.ac.uk)
 // This software is licensed under GPL-2.0.  You should have
 // received a copy of the license with this software.  If
 // not, please Email the author.
@@ -15,14 +15,13 @@
 #include "../lexer.h"
 #include "../parser.h"
 #include "../simulator.h"
+#include "../common.h"
 
 
 static const char *help=
-"bcs simulates a stochastic model written in the beacon calculus.\n"
+"bcs simulates a stochastic model written in the Beacon Calculus.\n"
 "To run bcs, do:\n"
-"  ./bcs [arguments] sourceCode.bc\n"
-"Example:\n"
-"  ./bcs -o simulationOutput sourceCode.bc\n"
+"  ./bcs [arguments] -o simulationOutput sourceCode.bc\n"
 "Required arguments are:\n"
 "  -o,--output               output file name prefix,\n"
 "  -s,--simulations          number of simulations to run.\n"
@@ -30,7 +29,8 @@ static const char *help=
 "  -t,--threads              number of threads to use (default: 1),\n"
 "  -m,--maxTrans             maximum number of transitions allowed per simulation (default: 1000000),\n"
 "  -d,--maxDuration          maximum duration of each simulation(default: Inf),\n"
-"  -h,--help                 show useage information.\n";
+"  -h,--help                 show useage information,\n"
+"  -v,--version              show version.\n";
 
 
 struct Arguments {
@@ -44,17 +44,41 @@ struct Arguments {
 };
 
 
+void showHelp(){
+
+	std::cout << help;
+	std::cout << "Version: " << VERSION << std::endl;
+	std::cout << "Written by Michael Boemo, Department of Pathology, University of Cambridge." << std::endl;
+	std::cout << "Please submit bug reports to GitHub Issues." << std::endl;
+}
+
+
+void showVersion(){
+
+	std::cout << "Version: " << VERSION << std::endl;
+	std::cout << "Written by Michael Boemo, Department of Pathology, University of Cambridge." << std::endl;
+	std::cout << "Please submit bug reports to GitHub Issues." << std::endl;
+}
+
+
 Arguments parseArguments( int argc, char** argv ){
 
 	if( argc < 2 ){
 
-		std::cout << "Exiting with error.  No source code file specified." << std::endl << help << std::endl;
+		std::cout << "Exiting with error.  No source code file specified." << std::endl;
+		showHelp();
 		exit(EXIT_FAILURE);
 	}
 
 	if ( std::string( argv[ 1 ] ) == "-h" or std::string( argv[ 1 ] ) == "--help" ){
 
-		std::cout << help << std::endl;
+		showHelp();
+		exit(EXIT_SUCCESS);
+	}
+
+	if ( std::string( argv[ 1 ] ) == "-v" or std::string( argv[ 1 ] ) == "--version" ){
+
+		showVersion();
 		exit(EXIT_SUCCESS);
 	}
 
@@ -102,12 +126,23 @@ Arguments parseArguments( int argc, char** argv ){
 			args.threads = atoi( strArg.c_str() );
 			i+=2;	
 		}
+		else if ( flag == "-h" or flag == "--help" ){
+
+			showHelp();
+			exit(EXIT_SUCCESS);
+		}
+		else if ( flag == "-v" or flag == "--version" ){
+
+			showVersion();
+			exit(EXIT_SUCCESS);
+		}
 		/*NOTE: this is quite unsafe.  We could try to take a mistakenly input flag as the source code */
 		else{
 
 			if ( flag.substr(0,1) == "-" ){
 
-				std::cout << "Exiting with error.  Unknown flag specified." << std::endl << help << std::endl;
+				std::cout << "Exiting with error.  Unknown flag specified." << std::endl;
+				showHelp();
 				exit(EXIT_FAILURE);
 			}
 
