@@ -71,7 +71,7 @@ std::vector< std::vector< Token * > > splitOnCommas( std::vector< Token * > &tok
 
 
 /*BLOCK METHODS------------------------------------------------------------------------------------------------------------------------------------------------------*/
-ActionBlock::ActionBlock( Token *t, std::string s ) : Block( t, s ){
+ActionBlock::ActionBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 #if DEBUG
 std::cout << "---------------" << std::endl;
@@ -92,7 +92,17 @@ std::cout << "Starting ActionBlock parsing on: " << t -> value() << std::endl;
 	/*get the rate tokens and make a parse tree on arithmetic operations */
 	std::string rateSubstr = wholeAction.substr(wholeAction.find(",")+1, wholeAction.find("}") - wholeAction.find(",") - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
+	for (auto tr = tokenisedRate.begin(); tr < tokenisedRate.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
 	_RPNrate = shuntingYard( tokenisedRate );
+
 
 #if DEBUG
 std::cout << "Tokenised rate in RPN: ";
@@ -102,7 +112,7 @@ std::cout << std::endl;
 }
 
 
-ChoiceBlock::ChoiceBlock( Token *t, std::string s ) : Block( t, s ){
+ChoiceBlock::ChoiceBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 	assert( t -> value() == "+" );
 	_owningProcess = s;
@@ -110,7 +120,7 @@ ChoiceBlock::ChoiceBlock( Token *t, std::string s ) : Block( t, s ){
 }
 
 
-ParallelBlock::ParallelBlock( Token *t, std::string s ) : Block( t, s ){
+ParallelBlock::ParallelBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 	assert( t -> value() == "||" );
 	_owningProcess = s;
@@ -118,7 +128,7 @@ ParallelBlock::ParallelBlock( Token *t, std::string s ) : Block( t, s ){
 }
 
 
-GateBlock::GateBlock( Token *t, std::string s ) : Block( t, s ){
+GateBlock::GateBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 #if DEBUG
 std::cout << "---------------" << std::endl;
@@ -135,6 +145,16 @@ std::cout << "Starting GateBlock parsing on: " << t -> value() << std::endl;
 
 	if (tokenisedGate.size() == 0) throw SyntaxError( t, "Gate condition cannot be empty.");
 
+	for (auto tr = tokenisedGate.begin(); tr < tokenisedGate.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
+
 	_RPNexpression = shuntingYard( tokenisedGate );
 
 #if DEBUG
@@ -145,7 +165,7 @@ std::cout << std::endl;
 }
 
 
-MessageSendBlock::MessageSendBlock( Token *t, std::string s ) : Block( t, s ){
+MessageSendBlock::MessageSendBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 #if DEBUG
 std::cout << "---------------" << std::endl;
@@ -204,6 +224,15 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	buffer.clear();
 	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
+	for (auto tr = tokenisedParamArithmetic.begin(); tr < tokenisedParamArithmetic.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
 	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
 	
 	if (tokenisedParamArithmetic.size() == 0) throw SyntaxError( t, "Message must send a comma-separated list of at least one value.");
@@ -223,6 +252,15 @@ for ( auto exp = _RPNexpressions.begin(); exp < _RPNexpressions.end(); exp++ ){
 	//get the rate tokens and make a parse tree on arithmetic operations
 	std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",",wholeMessage.find(']'))+1, wholeMessage.find("}") - wholeMessage.find(",",wholeMessage.find(']')) - 1);
 	std::vector< Token * > tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
+	for (auto tr = tokenisedRate.begin(); tr < tokenisedRate.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
 	_RPNrate = shuntingYard( tokenisedRate );
 
 #if DEBUG
@@ -233,7 +271,7 @@ std::cout << std::endl;
 }
 
 
-MessageReceiveBlock::MessageReceiveBlock( Token *t, std::string s ) : Block( t, s ){
+MessageReceiveBlock::MessageReceiveBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 #if DEBUG
 std::cout << "---------------" << std::endl;
@@ -291,6 +329,15 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	//parse parameters
 	std::string betweenSquareBrackets = wholeMessage.substr( wholeMessage.find("[") + 1, wholeMessage.find("]") - wholeMessage.find("[") - 1 );
 	std::vector< Token * > tokenisedParamArithmetic = scanLine( betweenSquareBrackets, t -> getLine(), t -> getColumn() );
+	for (auto tr = tokenisedParamArithmetic.begin(); tr < tokenisedParamArithmetic.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
 	_RPNexpressions = splitOnCommas( tokenisedParamArithmetic );
 
 	//check if it uses set operations so we can optimise it if not
@@ -379,7 +426,17 @@ std::cout << "Binding variable token: " << tokenisedBinding[i] -> value() << std
 			throw SyntaxError( t, "Binding variables must be a comma-separated list of variables.");	
 		}
 
-		//if we bind a variable, we alreayd figured out what the tokenised rate is above
+		//if we bind a variable, we already figured out what the tokenised rate is above
+		for (auto tr = tokenisedRate.begin(); tr < tokenisedRate.end(); tr++){
+			if ((*tr) -> identify() == "Variable"){
+				std::string variableName = (*tr) -> value();
+				if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+					and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()
+					and std::find(_bindingVariables.begin(),_bindingVariables.end(),variableName) == _bindingVariables.end()){
+						throw UndefinedVariable(*tr);
+					}
+			}
+		}
 		_RPNrate = shuntingYard( tokenisedRate );
 	}
 	else{//if no binding variable, parse the rate the same way we would for a send
@@ -387,6 +444,15 @@ std::cout << "Binding variable token: " << tokenisedBinding[i] -> value() << std
 		//get the rate tokens and make a parse tree on arithmetic operations
 		std::string rateSubstr = wholeMessage.substr(wholeMessage.find(",",wholeMessage.find(']'))+1, wholeMessage.find("}") - wholeMessage.find(",",wholeMessage.find(']')) - 1);
 		tokenisedRate = scanLine( rateSubstr, t -> getLine(), t -> getColumn() );
+		for (auto tr = tokenisedRate.begin(); tr < tokenisedRate.end(); tr++){
+			if ((*tr) -> identify() == "Variable"){
+				std::string variableName = (*tr) -> value();
+				if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+					and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+						throw UndefinedVariable(*tr);
+					}
+			}
+		}
 		_RPNrate = shuntingYard( tokenisedRate );
 	}
 
@@ -398,7 +464,7 @@ std::cout << std::endl;
 }
 
 
-ProcessBlock::ProcessBlock( Token *t, std::string s ) : Block( t, s ){
+ProcessBlock::ProcessBlock( Token *t, std::string s, std::vector<std::string> parameterNames, std::vector<std::string> globalVarNames ) : Block( t, s, parameterNames, globalVarNames ){
 
 #if DEBUG
 std::cout << "---------------" << std::endl;
@@ -416,6 +482,15 @@ std::cout << "Starting MessageReceiveBlock parsing on: " << t -> value() << std:
 	/*parse parameter arithmetic expression, if any */
 	std::string betweenBrackets = wholeProcess.substr( wholeProcess.find("[") + 1, wholeProcess.find("]") - wholeProcess.find("[") - 1 );
 	std::vector< Token * > tokenisedParam = scanLine( betweenBrackets, t -> getLine(), t -> getColumn() );
+	for (auto tr = tokenisedParam.begin(); tr < tokenisedParam.end(); tr++){
+		if ((*tr) -> identify() == "Variable"){
+			std::string variableName = (*tr) -> value();
+			if (std::find(parameterNames.begin(),parameterNames.end(),variableName) == parameterNames.end()
+				and std::find(globalVarNames.begin(),globalVarNames.end(),variableName) == globalVarNames.end()){
+					throw UndefinedVariable(*tr);
+				}
+		}
+	}
 	if ( tokenisedParam.size() > 0 ){ //only bother doing this if we have parameters
 
 		std::vector< std::vector< Token * > > split_tokenisedParam = splitOnCommas( tokenisedParam );
@@ -437,37 +512,40 @@ for ( auto exp = _parameterExpressions.begin(); exp < _parameterExpressions.end(
 
 
 /*SECOND PASS PARSING FUNCTIONS--------------------------------------------------------------------------------------------------------------------------------------*/
-Block *tokenToBlock( Token *t, std::string processName ){
+Block *tokenToBlock( Token *t,
+		             std::string processName,
+					 std::vector<std::string> parameterNames,
+					 std::vector<std::string> globalVarNames ){
 
 	Block *newBlock;
 	
 	if ( t -> identify() == "Action" ){
 
-		newBlock = new ActionBlock( t, processName );
+		newBlock = new ActionBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> value() == "+" ){
 
-		newBlock = new ChoiceBlock( t, processName );
+		newBlock = new ChoiceBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> value() == "||" ){
 
-		newBlock = new ParallelBlock( t, processName );
+		newBlock = new ParallelBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> identify() == "Gate" ){
 
-		newBlock = new GateBlock( t, processName );
+		newBlock = new GateBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> identify() == "MessageSend" or t -> identify() == "BeaconKill" ){
 
-		newBlock = new MessageSendBlock( t, processName );
+		newBlock = new MessageSendBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> identify() == "MessageReceive" or t -> identify() == "BeaconCheck" ){
 
-		newBlock = new MessageReceiveBlock( t, processName );
+		newBlock = new MessageReceiveBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else if ( t -> identify() == "Process" ){
 
-		newBlock = new ProcessBlock( t, processName );
+		newBlock = new ProcessBlock( t, processName, parameterNames, globalVarNames );
 	}
 	else assert(false);
 
@@ -572,13 +650,27 @@ for (auto param = sp.parameterValues.values.begin(); param != sp.parameterValues
 }
 
 
-void secondParseProcessDef( Token *t, Block *b, Tree<Token> &treeForLine, Tree<Block> &bt, std::string processName ){
+void secondParseProcessDef( Token *t, Block *b,
+		                    Tree<Token> &treeForLine,
+							Tree<Block> &bt,
+							std::string processName,
+							std::vector<std::string> parameterNames,
+							std::vector<std::string> globalVarNames ){
 //recursively iterates down a parse tree and builds a block tree with the same structure
 //arguments:
 // - t: the parent token,
 // - b: the parent block,
 // - treeForLine: the parse tree from the first round of parsing,
 // - bt: the block tree that we're going to build.
+// - parameterNames: parameter variable names so we can check all variables are defined
+// - globalVars: global variable names so we can check all variables are defined
+
+	/*carry forward new binding variables if we have them */
+	if (b -> identify() == "MessageReceive"){
+		MessageReceiveBlock *receive = dynamic_cast< MessageReceiveBlock* >(b);
+		std::vector<std::string> newBindingVars = receive -> getBindingVariable();
+		parameterNames.insert(parameterNames.end(),newBindingVars.begin(),newBindingVars.end());
+	}
 
 	if ( not treeForLine.isLeaf( t ) ){
 	
@@ -586,9 +678,9 @@ void secondParseProcessDef( Token *t, Block *b, Tree<Token> &treeForLine, Tree<B
 
 		for ( auto c = children.begin(); c < children.end(); c++ ){
 
-			Block *newChild = tokenToBlock( *c, processName );
+			Block *newChild = tokenToBlock( *c, processName, parameterNames, globalVarNames );
 			bt.addChild( b, newChild );
-			secondParseProcessDef( *c, newChild, treeForLine, bt, processName );
+			secondParseProcessDef( *c, newChild, treeForLine, bt, processName, parameterNames, globalVarNames );
 		}
 	}
 }
@@ -620,8 +712,8 @@ void checkProcessDefinition( Block *b, Tree<Block> &bt, std::map< std::string, P
 
 
 std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess > > secondPassParse( std::vector< Tree<Token> > processDefPTs,
-							                            std::vector< Token* > tokenisedSystemLine,
-										    GlobalVariables &globalVars ){
+		                                                                                             std::vector< Token* > tokenisedSystemLine,
+																									 GlobalVariables &globalVars ){
 //main function for second pass parsing.  sets the root of the new block tree, calls
 //secondParseProcessDef to fill out the tree, then substitutes all variables 
 //arguments:
@@ -664,9 +756,9 @@ std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess 
 		}
 
 		/*root the new block tree, recurse on the token tree to fill it up, and associate it to the process name */
-		Block *root = tokenToBlock( children[1], processName );
+		Block *root = tokenToBlock( children[1], processName, pd.parameters, globalVars.getNames() );
 		(pd.parseTree).setRoot( root );
-		secondParseProcessDef( children[1], root, *pt, pd.parseTree, processName );
+		secondParseProcessDef( children[1], root, *pt, pd.parseTree, processName, pd.parameters, globalVars.getNames() );
 		processName2Definition[ processName ] = pd;
 
 #if DEBUG

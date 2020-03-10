@@ -22,7 +22,7 @@ class Block{
 
 	protected:
 		Token * inputToken;
-		Block( Token * t, std::string &name ){inputToken = t;}
+		Block( Token * t, std::string &name, std::vector<std::string> paramNames, std::vector<std::string> globalNames ){inputToken = t;}
 
 	public:
 		virtual Token * getToken(void) const = 0;
@@ -39,7 +39,7 @@ class ActionBlock: public Block {
 		std::vector< Token * > _RPNrate;
 
 	public:
-		ActionBlock( Token *, std::string );
+		ActionBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		ActionBlock( const ActionBlock &ab ) : Block(ab){
 
 			actionName = ab.actionName;
@@ -60,7 +60,7 @@ class ChoiceBlock: public Block {
 
 	public:
 		Token * getToken(void) const {return _underlyingToken;}
-		ChoiceBlock( Token *, std::string );
+		ChoiceBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		ChoiceBlock( const ChoiceBlock &cb ) : Block(cb) {}
 		std::string identify( void ) const { return "Choice"; }
 		std::vector< Token * > getRate( void ) const { assert( false ); }
@@ -75,7 +75,7 @@ class ParallelBlock: public Block {
 
 	public:
 		Token * getToken(void) const {return _underlyingToken;}
-		ParallelBlock( Token *, std::string );
+		ParallelBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		ParallelBlock( const ParallelBlock &cb ) : Block(cb) {}
 		std::string identify( void ) const { return "Parallel"; }
 		std::vector< Token * > getRate( void ) const { assert( false ); }
@@ -90,7 +90,7 @@ class GateBlock: public Block {
 		std::vector< Token * > _RPNexpression;
 	public:
 		Token * getToken(void) const {return _underlyingToken;}
-		GateBlock( Token *, std::string );
+		GateBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		GateBlock( const GateBlock &gb ) : Block(gb){
 
 			_RPNexpression = gb.getConditionExpression();
@@ -113,7 +113,7 @@ class MessageReceiveBlock: public Block {
 		std::vector< Token * > _RPNrate;
 
 	public:
-		MessageReceiveBlock( Token *, std::string );
+		MessageReceiveBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		MessageReceiveBlock( const MessageReceiveBlock &mb ) : Block(mb){
 
 			_handshake = mb.isHandshake();
@@ -147,7 +147,7 @@ class MessageSendBlock: public Block {
 		std::vector< std::vector< Token * > > _RPNexpressions;
 		std::vector< Token * > _RPNrate;
 	public:
-		MessageSendBlock( Token *, std::string );
+		MessageSendBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		MessageSendBlock( const MessageSendBlock &mb ) : Block(mb){
 
 			_handshake = mb.isHandshake();
@@ -173,7 +173,7 @@ class ProcessBlock: public Block {
 		std::vector< std::vector<Token * > > _parameterExpressions;
 		Token *_underlyingToken;
 	public:
-		ProcessBlock( Token *, std::string );
+		ProcessBlock( Token *, std::string, std::vector<std::string>, std::vector<std::string> );
 		ProcessBlock( const ProcessBlock &pb ) : Block(pb) {
 
 			_processName = pb.getProcessName();

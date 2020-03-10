@@ -1,0 +1,12 @@
+//EXPECTED BEHAVIOUR:
+//throw an error that the rate variable is undefined
+
+//WHAT IT TESTS:
+// -we should throw an error and gracefully exit if a rate variable is undefined
+
+definedVar = 1.0;
+
+Proc[i] = {testAction,undefinedVar}.{testAction2, definedVar};
+
+//system 
+Proc[0];

@@ -179,6 +179,14 @@ class GlobalVariables{
 		if ( values.count(pName) > 0 ) values.erase(values.find(pName));
 		values[pName] = value;
 	}
+	std::vector<std::string> getNames(){
+		std::vector<std::string> variableNames;
+		for ( auto i = values.begin(); i != values.end(); i++){
+
+			variableNames.push_back( i -> first);
+		}
+		return variableNames;
+	}
 	void printValues(){
 		for ( auto i = values.begin(); i != values.end(); i++){
 
