@@ -22,7 +22,7 @@ copyright = '2020, Michael A. Boemo'
 author = 'Michael A. Boemo'
 
 # The full version, including alpha/beta/rc tags
-release = 'v1.0'
+release = 'v1.0.1'
 
 
 # -- General configuration ---------------------------------------------------

@@ -11,7 +11,7 @@ git clone https://github.com/MBoemo/bcs.git
 The bcs directory will appear in your current directory.  bcs was written in C++11 and uses OpenMP for parallel processing, but these are standard on most systems; there are no other third party dependencies.  Compile the latest version of bcs by running:
 ```shell
 cd bcs
-git checkout v1.0.0
+git checkout v1.0.1
 make
 ```
 This will put the bcs executable into the bcs/bin directory.  Development was done using gcc 5.4.0 on an Ubuntu 16.04 platform, and bcs was tested to compile and run on both OSX and Linux systems.
