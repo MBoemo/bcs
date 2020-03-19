@@ -20,7 +20,6 @@
 #include "parser.h"
 #include "error_handling.h"
 
-
 void printTree( Tree<Token> pt, Token *t ){
 /*for testing/debugging - prints out the parse tree */
 

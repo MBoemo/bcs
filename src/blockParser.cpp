@@ -17,6 +17,27 @@
 #include "error_handling.h"
 #include "evaluate_trees.h"
 
+bool operator== (const ParameterValues &pv1, const ParameterValues &pv2){
+
+	if (pv1.values == pv2.values) return true;
+	else return false;
+}
+
+bool operator!= (const ParameterValues &pv1, const ParameterValues &pv2){
+
+	return !(pv1 == pv2);
+}
+
+bool operator== (const SystemProcess &sp1, const SystemProcess &sp2){
+
+	if (sp1.parseTree == sp2.parseTree && sp1.parameterValues == sp2.parameterValues && sp1.localVariables == sp2.localVariables) return true;
+	else return false;
+}
+
+bool operator!= (const SystemProcess &sp1, const SystemProcess &sp2){
+
+	return !(sp1 == sp2);
+}
 
 void printBlockTree( Tree<Block> pt, Block *b ){
 /*for testing/debugging - prints out the parse tree */
@@ -606,11 +627,8 @@ void secondParseSystemLine( std::vector< Token * > &tokenisedSL, std::list< Syst
 				sp.parameterValues = pValues;
 			}
 			
-			//add multiple copies to the system if there was a multiplier on the system line
-			for ( int i = 0; i < multiplier; i++ ){
-
-				system.push_back( sp );
-			}
+			sp.clones = multiplier;
+			system.push_back(sp);
 
 #if DEBUG
 std::cout << "---------------" << std::endl;

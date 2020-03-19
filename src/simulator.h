@@ -58,6 +58,7 @@ class System{
 		SystemProcess * updateSpForTransition( std::shared_ptr<Candidate> );
 		bool variableIsDefined(std::string, ParameterValues &, std::map< std::string, Numerical > &);
 		void printTransition(double, std::shared_ptr<Candidate>);
+		bool condenseSystem(SystemProcess *);
 };
 
 

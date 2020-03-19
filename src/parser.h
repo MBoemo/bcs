@@ -161,6 +161,14 @@ class Tree {
 			return newSubtree;
 		}
 		std::vector< T * > getNodes(void){ return _nodes; }
+		friend bool operator== (const Tree &t1, const Tree &t2){
+			if (t1._children == t2._children && t1._parents == t2._parents && t1._root == t2._root && t1._nodes ==  t2._nodes) return true;
+			else return false;
+		}
+		friend bool operator != (const Tree &t1, const Tree &t2){
+			if (t1._children != t2._children || t1._parents != t2._parents || t1._root != t2._root || t1._nodes !=  t2._nodes) return true;
+			else return false;
+		}
 };
 
 
