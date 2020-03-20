@@ -64,6 +64,8 @@ class HandshakeChannel{
 		std::shared_ptr<HandshakeCandidate> pickCandidate(double &, double , double );
 		void addSendCandidate( std::shared_ptr<Candidate> );
 		void addReceiveCandidate( std::shared_ptr<Candidate> );
+		bool matchClone (SystemProcess *, SystemProcess *);
+		void cleanCloneFromChannel( SystemProcess *);
 };
 
 #endif

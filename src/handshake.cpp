@@ -9,12 +9,14 @@
 //#define DEBUG_HANDSHAKE 1
 
 #include <memory>
+#include <algorithm>
 #include <chrono>
 #include <list>
 #include <iomanip>
 #include <sstream>
 #include <iterator>
 #include "handshake.h"
+#include "common.h"
 #include "error_handling.h"
 
 HandshakeChannel::HandshakeChannel( std::vector< std::string > name, GlobalVariables &globalVars ){
@@ -109,8 +111,12 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				if (allPassed){
 
 					std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *addedSend, *r_cand, sEval );
-					candidatesAdded++;
-					rateSum += newHS -> rate;
+
+					SystemProcess *sp_send = (*addedSend) -> processInSystem;
+					SystemProcess *sp_receive = (*r_cand) -> processInSystem;
+					size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+					candidatesAdded += multiplier;
+					rateSum += newHS -> rate * multiplier;
 				}
 			}
 		}
@@ -149,8 +155,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				if (allPassed){
 
 					std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *s_cand, *addedReceive, sEval );
-					candidatesAdded++;
-					rateSum += newHS -> rate;
+					SystemProcess *sp_send = (*s_cand) -> processInSystem;
+					SystemProcess *sp_receive = (*addedReceive) -> processInSystem;
+					size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+					candidatesAdded += multiplier;
+					rateSum += newHS -> rate * multiplier;
 				}
 			}
 		}
@@ -187,8 +196,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 			if (allPassed){
 
 				std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *addedSend, *r_cand, sEval );
-				candidatesAdded++;
-				rateSum += newHS -> rate;
+				SystemProcess *sp_send = (*addedSend) -> processInSystem;
+				SystemProcess *sp_receive = (*r_cand) -> processInSystem;
+				size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+				candidatesAdded += multiplier;
+				rateSum += newHS -> rate * multiplier;
 			}
 		}
 	}
@@ -222,27 +234,37 @@ std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp
 		for ( auto c = _possibleHandshakes_sp2Candidates.at(sp).begin(); c != _possibleHandshakes_sp2Candidates.at(sp).end(); c++ ){
 
 			//count the candidate as removed and decrement the ratesum
-			removed++;
-			rateSum += (*c) -> rate;
+			SystemProcess *sp_send = (*c) -> hsSendCand -> processInSystem;
+			SystemProcess *sp_receive = (*c) -> hsReceiveCand -> processInSystem;
+			assert(sp == sp_send or sp == sp_receive);
+			size_t multiplier;
+			if (sp == sp_send) multiplier = sp_receive -> clones;
+			else multiplier =  sp_send -> clones;
 
-			//remove this candidate from the sp->candidate map for other sp's that also use it so we don't count a candidate twice later
+			removed += multiplier;
+			rateSum += (*c) -> rate * multiplier;
+
 			assert(_possibleHandshakes_candidates2Sp.count(*c) > 0);
 
-			for ( auto otherSp = _possibleHandshakes_candidates2Sp[*c].begin(); otherSp != _possibleHandshakes_candidates2Sp[*c].end(); otherSp++ ){
+			//if we're out of clones for this sp, then remove the candidate from the sp->candidate map for other sp's that also use it so we don't count a candidate twice later
+			if (sp -> clones == 1){
 
-				if ( *otherSp == sp ) continue;//we'll do this one later
-		
-				//find the candidate in the candidate list for the other sp and erase it
-				auto itr = std::find( _possibleHandshakes_sp2Candidates[*otherSp].begin(), _possibleHandshakes_sp2Candidates[*otherSp].end(), *c );
-				_possibleHandshakes_sp2Candidates[*otherSp].erase( itr );
+				for ( auto otherSp = _possibleHandshakes_candidates2Sp[*c].begin(); otherSp != _possibleHandshakes_candidates2Sp[*c].end(); otherSp++ ){
+
+					if ( *otherSp == sp ) continue;//we'll do this one later
+
+					//find the candidate in the candidate list for the other sp and erase it
+					auto itr = std::find( _possibleHandshakes_sp2Candidates[*otherSp].begin(), _possibleHandshakes_sp2Candidates[*otherSp].end(), *c );
+					_possibleHandshakes_sp2Candidates[*otherSp].erase( itr );
+				}
+				_possibleHandshakes_candidates2Sp.erase( _possibleHandshakes_candidates2Sp.find( *c ) );
 			}
-			_possibleHandshakes_candidates2Sp.erase( _possibleHandshakes_candidates2Sp.find( *c ) );
 		}
-		_possibleHandshakes_sp2Candidates.erase( _possibleHandshakes_sp2Candidates.find(sp) );
+		if (sp -> clones == 1) _possibleHandshakes_sp2Candidates.erase( _possibleHandshakes_sp2Candidates.find(sp) );
 	}
 
 	auto locInSend = _hsSend_Sp2Candidates.find( sp );
-	if (locInSend != _hsSend_Sp2Candidates.end() ){
+	if (locInSend != _hsSend_Sp2Candidates.end() and sp -> clones <= 1 ){
 
 #if DEBUG_HANDSHAKE
 std::cout << "chan: ";
@@ -253,7 +275,7 @@ std::cout << " removed " << _hsSend_Sp2Candidates[sp].size() << " possible sends
 	}
 
 	auto locInRec = _hsReceive_Sp2Candidates.find( sp );
-	if (locInRec != _hsReceive_Sp2Candidates.end() ){
+	if (locInRec != _hsReceive_Sp2Candidates.end() and sp -> clones <= 1 ){
 
 #if DEBUG_HANDSHAKE
 std::cout << "chan: ";
@@ -274,7 +296,12 @@ std::shared_ptr<HandshakeCandidate> HandshakeChannel::pickCandidate(double &runn
 
 	for ( auto cand = _possibleHandshakes_candidates2Sp.begin(); cand != _possibleHandshakes_candidates2Sp.end(); cand++ ){
 
-		double r = (cand -> first) -> rate;
+		//scale by the number of send/receive system process clones
+		SystemProcess *sp_send = ((cand -> first ) -> hsSendCand) -> processInSystem;
+		SystemProcess *sp_receive = ((cand -> first ) -> hsReceiveCand) -> processInSystem;
+		size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+
+		double r = ((cand -> first) -> rate) * multiplier;
 		double lower = runningTotal / rateSum;
 		double upper = (runningTotal + r) / rateSum;
 
@@ -305,7 +332,6 @@ std::cout << "associated with sp: " << sc -> processInSystem << std::endl;
 
 		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 	}
-
 	_sendToAdd.push_back( sc );
 }
 
@@ -327,6 +353,73 @@ std::cout << "associated with sp: " << rc -> processInSystem << std::endl;
 
 		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 	}
-
 	_receiveToAdd.push_back( rc );
+}
+
+
+bool HandshakeChannel::matchClone( SystemProcess *newSp, SystemProcess *existingSp){
+
+	if (_hsSend_Sp2Candidates.count(existingSp) == 0
+			and _hsReceive_Sp2Candidates.count(existingSp) == 0
+			and _hsSend_Sp2Candidates.count(newSp) == 0
+			and _hsReceive_Sp2Candidates.count(newSp) == 0) return true;
+
+	assert(_hsSend_Sp2Candidates.count(existingSp) == _hsSend_Sp2Candidates.count(newSp));
+	assert(_hsReceive_Sp2Candidates.count(existingSp) == _hsReceive_Sp2Candidates.count(newSp));
+
+	if (_hsSend_Sp2Candidates.count(newSp) > 0 and _hsReceive_Sp2Candidates.count(newSp) > 0){
+
+		bool matchSends = std::is_permutation(_hsSend_Sp2Candidates[newSp].begin(), _hsSend_Sp2Candidates[newSp].end(), _hsSend_Sp2Candidates[existingSp].begin(), compareCandidates);
+		bool matchReceives = std::is_permutation(_hsReceive_Sp2Candidates[newSp].begin(), _hsReceive_Sp2Candidates[newSp].end(), _hsReceive_Sp2Candidates[existingSp].begin(), compareCandidates);
+
+		if (matchSends and matchReceives) return true;
+		else return false;
+	}
+	else if (_hsSend_Sp2Candidates.count(newSp) > 0){
+
+		bool matchSends = std::is_permutation(_hsSend_Sp2Candidates[newSp].begin(), _hsSend_Sp2Candidates[newSp].end(), _hsSend_Sp2Candidates[existingSp].begin(), compareCandidates);
+		return matchSends;
+	}
+	else if (_hsReceive_Sp2Candidates.count(newSp)){
+
+		bool matchReceives = std::is_permutation(_hsReceive_Sp2Candidates[newSp].begin(), _hsReceive_Sp2Candidates[newSp].end(), _hsReceive_Sp2Candidates[existingSp].begin(), compareCandidates);
+		return matchReceives;
+	}
+	else{
+
+		return false;
+	}
+}
+
+
+void HandshakeChannel::cleanCloneFromChannel( SystemProcess *sp ){
+//clean a system process that we're removing from the system from the channel
+//return the number of handshake candidates we removed and the amount that this should decrease the total system rate
+
+	//for each candidate the system process used
+	if ( _possibleHandshakes_sp2Candidates.count(sp) > 0 ){
+		for ( auto c = _possibleHandshakes_sp2Candidates.at(sp).begin(); c != _possibleHandshakes_sp2Candidates.at(sp).end(); c++ ){
+
+			assert(_possibleHandshakes_candidates2Sp.count(*c) > 0);
+
+			//if we're out of clones for this sp, then remove the candidate from the sp->candidate map for other sp's that also use it so we don't count a candidate twice later
+
+			for ( auto otherSp = _possibleHandshakes_candidates2Sp[*c].begin(); otherSp != _possibleHandshakes_candidates2Sp[*c].end(); otherSp++ ){
+
+				if ( *otherSp == sp ) continue;//we'll do this one later
+
+				//find the candidate in the candidate list for the other sp and erase it
+				auto itr = std::find( _possibleHandshakes_sp2Candidates[*otherSp].begin(), _possibleHandshakes_sp2Candidates[*otherSp].end(), *c );
+				_possibleHandshakes_sp2Candidates[*otherSp].erase( itr );
+			}
+			_possibleHandshakes_candidates2Sp.erase( _possibleHandshakes_candidates2Sp.find( *c ) );
+		}
+		_possibleHandshakes_sp2Candidates.erase( _possibleHandshakes_sp2Candidates.find(sp) );
+	}
+
+	auto locInSend = _hsSend_Sp2Candidates.find( sp );
+	if (locInSend != _hsSend_Sp2Candidates.end()) _hsSend_Sp2Candidates.erase( locInSend );
+
+	auto locInRec = _hsReceive_Sp2Candidates.find( sp );
+	if (locInRec != _hsReceive_Sp2Candidates.end()) _hsReceive_Sp2Candidates.erase( locInRec );
 }

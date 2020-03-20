@@ -264,7 +264,6 @@ class Candidate{
 		double rate = 0.0;
 		std::vector< Numerical > rangeEvaluation;
 		std::list< SystemProcess > parallelProcesses;
-		size_t clones = 1;
 		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
 			actionCandidate = b;
