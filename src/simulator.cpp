@@ -622,7 +622,7 @@ std::cout << "   Reformatting system... ";
 
 				splitOnParallel( *s, ((*s) -> parseTree).getRoot(), newProcesses );
 				delete *s;
-				s = _currentProcesses.erase( s );
+				s = toAdd.erase( s );
 			}
 			else s++;
 		}
