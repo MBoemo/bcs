@@ -1,4 +1,4 @@
-//multisite phosphorylation model from Boemo, Cardelli, and Nieduszynski (2019)
+//multisite phosphorylation model from Boemo, Cardelli, and Nieduszynski (2020)
 
 intlPhosphatase = 100;
 intlKinase = 100;//100; //varied in Fig. 3c 

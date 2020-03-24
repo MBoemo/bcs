@@ -359,15 +359,15 @@ std::cout << "associated with sp: " << rc -> processInSystem << std::endl;
 
 bool HandshakeChannel::matchClone( SystemProcess *newSp, SystemProcess *existingSp){
 
-	if (_hsSend_Sp2Candidates.count(existingSp) == 0
-			and _hsReceive_Sp2Candidates.count(existingSp) == 0
-			and _hsSend_Sp2Candidates.count(newSp) == 0
-			and _hsReceive_Sp2Candidates.count(newSp) == 0) return true;
+	if (_hsSend_Sp2Candidates[existingSp].size() == 0
+			and _hsReceive_Sp2Candidates[existingSp].size() == 0
+			and _hsSend_Sp2Candidates[newSp].size() == 0
+			and _hsReceive_Sp2Candidates[newSp].size() == 0) return true;
 
-	assert(_hsSend_Sp2Candidates.count(existingSp) == _hsSend_Sp2Candidates.count(newSp));
-	assert(_hsReceive_Sp2Candidates.count(existingSp) == _hsReceive_Sp2Candidates.count(newSp));
+	assert(_hsSend_Sp2Candidates[existingSp].size() == _hsSend_Sp2Candidates[newSp].size());
+	assert(_hsReceive_Sp2Candidates[existingSp].size() == _hsReceive_Sp2Candidates[newSp].size());
 
-	if (_hsSend_Sp2Candidates.count(newSp) > 0 and _hsReceive_Sp2Candidates.count(newSp) > 0){
+	if (_hsSend_Sp2Candidates[newSp].size() > 0 and _hsReceive_Sp2Candidates[newSp].size() > 0){
 
 		bool matchSends = std::is_permutation(_hsSend_Sp2Candidates[newSp].begin(), _hsSend_Sp2Candidates[newSp].end(), _hsSend_Sp2Candidates[existingSp].begin(), compareCandidates);
 		bool matchReceives = std::is_permutation(_hsReceive_Sp2Candidates[newSp].begin(), _hsReceive_Sp2Candidates[newSp].end(), _hsReceive_Sp2Candidates[existingSp].begin(), compareCandidates);
@@ -375,12 +375,12 @@ bool HandshakeChannel::matchClone( SystemProcess *newSp, SystemProcess *existing
 		if (matchSends and matchReceives) return true;
 		else return false;
 	}
-	else if (_hsSend_Sp2Candidates.count(newSp) > 0){
+	else if (_hsSend_Sp2Candidates[newSp].size() > 0){
 
 		bool matchSends = std::is_permutation(_hsSend_Sp2Candidates[newSp].begin(), _hsSend_Sp2Candidates[newSp].end(), _hsSend_Sp2Candidates[existingSp].begin(), compareCandidates);
 		return matchSends;
 	}
-	else if (_hsReceive_Sp2Candidates.count(newSp)){
+	else if (_hsReceive_Sp2Candidates[newSp].size() > 0){
 
 		bool matchReceives = std::is_permutation(_hsReceive_Sp2Candidates[newSp].begin(), _hsReceive_Sp2Candidates[newSp].end(), _hsReceive_Sp2Candidates[existingSp].begin(), compareCandidates);
 		return matchReceives;

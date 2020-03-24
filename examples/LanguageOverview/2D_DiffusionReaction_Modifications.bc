@@ -1,4 +1,4 @@
-//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2020)
 //
 //To run:
 //   bin/bcs -s 5 -d 1000 -o 2D_DiffusionReaction_Modifications examples/LanguageOverview/2D_DiffusionReaction_Modifications.bc

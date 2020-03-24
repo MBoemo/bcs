@@ -1,4 +1,4 @@
-//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2020)
 
 r = 1;  //define the rate for movement
 rr = 2; //define a reaction rate

@@ -1,0 +1,12 @@
+//EXPECTED BEHAVIOUR:
+//run with debugging on simulator.cpp
+//system processes should branch and clone as they go
+
+//WHAT IT TESTS:
+// -clones are detected and grouped correctly with respect to handshakes
+
+P1[] = {@chan![0], 1}.{p1Action, 1};
+P2[] = {@chan?[0], 1}.{p2Action, 1};
+
+//system
+3*P1[] || 3*P2[];

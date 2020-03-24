@@ -1,4 +1,4 @@
-//Kinsin molecular crowding from Boemo, Cardelli, and Nieduszynski (2019)
+//Kinsin molecular crowding from Boemo, Cardelli, and Nieduszynski (2020)
 
 f = 10000; //fast rate
 r = 1; //stepping rate

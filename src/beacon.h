@@ -176,7 +176,7 @@ class communicationDatabase{
 
 		void printContents( void ){ //for testing
 
-			std::cout << ">>>>>>>>>>>>DATABASE CONTENTS: ";
+			std::cout << "   >>DATABASE CONTENTS: ";
 
 			for ( auto dbValues = _arity2entries.begin(); dbValues != _arity2entries.end(); dbValues++ ){ //go through arities	
 
@@ -210,6 +210,8 @@ class BeaconChannel{
 		void cleanSPFromChannel( SystemProcess *, int &, double & );
 		std::shared_ptr<Candidate> pickCandidate(double &, double, double);
 		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, double & );
+		bool matchClone( SystemProcess *, SystemProcess *);
+		void cleanCloneFromChannel( SystemProcess * );
 };
 
 

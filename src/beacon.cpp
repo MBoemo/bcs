@@ -9,6 +9,8 @@
 //#define DEBUG 1
 
 #include "beacon.h"
+#include "common.h"
+#include <algorithm>
 
 BeaconChannel::BeaconChannel( std::vector< std::string > name, GlobalVariables &globalVars ){
 
@@ -52,16 +54,16 @@ _database.printContents();
 			if ( not canReceive ){//only do a beacon check if you can't receive
 
 				_activeBeaconReceiveCands[sp].push_back( cand );
-				candidatesLeft++;
-				rateSum += rate.doubleCast();
+				candidatesLeft += sp -> clones;
+				rateSum += rate.doubleCast() * (sp -> clones);
 			}
 			else _potentialBeaconReceiveCands[sp].push_back( cand );
 
 #if DEBUG
-std::cout << ">>>>>>>>>>>>Adding candidate: Beacon check ";
+std::cout << "   >>Adding candidate: Beacon check ";
 Token *t = b -> getToken();
 std::cout << t -> value() << std::endl;
-std::cout << ">>>>>>>>>>>>Can receive? " << canReceive << std::endl;
+std::cout << "   >>Can receive? " << canReceive << std::endl;
 #endif
 
 		}
@@ -100,8 +102,8 @@ std::cout << ">>>>>>>>>>>>Can receive? " << canReceive << std::endl;
 				cand -> rate = rate.doubleCast();
 				cand -> rangeEvaluation = newRangeEval;
 				_activeBeaconReceiveCands[sp].push_back( cand );
-				candidatesLeft++;
-				rateSum += rate.doubleCast();
+				candidatesLeft += sp -> clones;
+				rateSum += rate.doubleCast() * (sp -> clones);
 			}
 
 			//if the mrb can't receive and isn't already in the potential receives, add it to the potential receives
@@ -112,10 +114,10 @@ std::cout << ">>>>>>>>>>>>Can receive? " << canReceive << std::endl;
 			}
 
 #if DEBUG
-std::cout << ">>>>>>>>>>>>Adding candidate: Beacon receive ";
+std::cout << "   >>Adding candidate: Beacon receive ";
 Token *t = b -> getToken();
 std::cout << t -> value() << std::endl;
-std::cout << ">>>>>>>>>>>>Can receive? " << matchingParameters.size() << std::endl;
+std::cout << "   >>Can receive? " << matchingParameters.size() << std::endl;
 #endif
 		}
 		else assert(false);
@@ -123,7 +125,7 @@ std::cout << ">>>>>>>>>>>>Can receive? " << matchingParameters.size() << std::en
 	else{
 
 #if DEBUG
-std::cout << ">>>>>>>>>>>>Adding candidate: Beacon send ";
+std::cout << "   >>Adding candidate: Beacon send ";
 Token *t = b -> getToken();
 std::cout << t -> value() << std::endl;
 #endif
@@ -148,16 +150,24 @@ std::cout << t -> value() << std::endl;
 		cand -> rangeEvaluation = param;
 
 		_sendCands[sp].push_back( cand );
-		candidatesLeft++;
-		rateSum += rate.doubleCast();
+		candidatesLeft += sp -> clones;
+		rateSum += rate.doubleCast() * (sp -> clones);
 	}
 }
 
 
 void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, double &rateSum ){
 
+#if DEBUG
+std::cout << "   >>Cleaning " << sp << " from channel - before clean" << std::endl;
+std::cout << "   >>clones: " << sp -> clones << std::endl;
+for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
+#endif
+
 	//erase from potential receives
-	if ( _potentialBeaconReceiveCands.find(sp) != _potentialBeaconReceiveCands.end() ){
+	if ( _potentialBeaconReceiveCands.find(sp) != _potentialBeaconReceiveCands.end() and sp -> clones == 1){
 
 		_potentialBeaconReceiveCands.erase(_potentialBeaconReceiveCands.find(sp));
 	}
@@ -170,7 +180,7 @@ void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, 
 			candidatesLeft--;
 			rateSum -= (*cand) -> rate;
 		}
-		_activeBeaconReceiveCands.erase( _activeBeaconReceiveCands.find(sp) );
+		if (sp -> clones == 1) _activeBeaconReceiveCands.erase( _activeBeaconReceiveCands.find(sp) );
 	}
 
 	//erase from sends
@@ -181,19 +191,29 @@ void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, 
 			candidatesLeft--;
 			rateSum -= (*cand) -> rate;
 		}
-		_sendCands.erase( _sendCands.find(sp) );
+		if (sp -> clones == 1) _sendCands.erase( _sendCands.find(sp) );
 	}
+#if DEBUG
+std::cout << "   >>Cleaning " << sp << " from channel - after clean" << std::endl;
+std::cout << "   >>clones: " << sp -> clones << std::endl;
+for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
+#endif
 }
 
 
 void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum){
 
 #if DEBUG
-std::cout << "Updating candidates (first)...." << std::endl;
+std::cout << "   >>Updating candidates - moving from active to potential...." << std::endl;
 _database.printContents();
+for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
 #endif
 
-	//move any actives that have become inactive to potential
+	//move any active beacons that have become inactive to potential
 	for ( auto candPair = _activeBeaconReceiveCands.begin(); candPair != _activeBeaconReceiveCands.end(); candPair++ ){
 
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end();){
@@ -201,6 +221,7 @@ _database.printContents();
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (*cand) -> actionCandidate );
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			SystemProcess *sp = (*cand) -> processInSystem;
+			assert(sp == candPair -> first);
 
 			bool canReceive;
 			if (mrb -> usesSets()){
@@ -212,8 +233,8 @@ _database.printContents();
 
 			if ( (not canReceive and not mrb -> isCheck()) or (canReceive and mrb -> isCheck()) ){
 
-				candidatesLeft--;
-				rateSum -= (*cand) -> rate;
+				candidatesLeft -= sp -> clones;
+				rateSum -= (*cand) -> rate * (sp -> clones);
 				_potentialBeaconReceiveCands[candPair -> first].push_back(*cand);
 				cand = (candPair -> second).erase(cand);
 			}
@@ -222,8 +243,11 @@ _database.printContents();
 	}
 
 #if DEBUG
-std::cout << "Updating candidates (second)...." << std::endl;
+std::cout << "   >>Updating candidates - moving from potential to active...." << std::endl;
 _database.printContents();
+for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
 #endif
 
 	//move any potentials to active if they can now receive
@@ -233,6 +257,7 @@ _database.printContents();
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end();){
 
 			SystemProcess *sp = (*cand) -> processInSystem;
+			assert(sp == candPair -> first);
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >( (*cand) -> actionCandidate );
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 
@@ -249,8 +274,8 @@ _database.printContents();
 				_activeBeaconReceiveCands[sp].push_back(*cand);
 				Numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, sp -> localVariables );
 				if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
-				candidatesLeft++;
-				rateSum += rate.doubleCast();
+				candidatesLeft += sp -> clones;
+				rateSum += rate.doubleCast() * (sp -> clones);
 				cand = (candPair -> second).erase(cand);
 			}
 			else if (not mrb -> isCheck()){
@@ -287,8 +312,8 @@ _database.printContents();
 					newCand -> rate = rate.doubleCast();
 					newCand -> rangeEvaluation = newRangeEval;
 					_activeBeaconReceiveCands[sp].push_back( newCand );
-					candidatesLeft++;
-					rateSum += rate.doubleCast();
+					candidatesLeft += sp -> clones;
+					rateSum += rate.doubleCast() * (sp -> clones);
 				}
 				if (matchingParameters.size() > 0) cand = (candPair -> second).erase(cand);
 				else cand++;
@@ -298,8 +323,11 @@ _database.printContents();
 	}
 
 #if DEBUG
-std::cout << "Updating candidates (third)...." << std::endl;
+std::cout << "   >>Updating candidates - should be finished...." << std::endl;
 _database.printContents();
+for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
+for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
 #endif
 }
 
@@ -307,14 +335,16 @@ _database.printContents();
 std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, double uniformDraw, double rateSum){
 
 #if DEBUG
-std::cout << ">>>>>>>>>>>>Picking beacon candidate..." << std::endl;
+std::cout << "   >>Picking beacon candidate..." << std::endl;
 #endif
 
 	for ( auto candPair = _activeBeaconReceiveCands.begin(); candPair != _activeBeaconReceiveCands.end(); candPair++ ){
 
+		SystemProcess *sp = candPair -> first;
+
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end(); cand++ ){
 
-			double r = (*cand) -> rate;
+			double r = (*cand) -> rate * (sp -> clones);
 			double lower = runningTotal / rateSum;
 			double upper = (runningTotal + r) / rateSum;
 
@@ -328,9 +358,11 @@ std::cout << ">>>>>>>>>>>>Picking beacon candidate..." << std::endl;
 
 	for ( auto candPair = _sendCands.begin(); candPair != _sendCands.end(); candPair++ ){
 
+		SystemProcess *sp = candPair -> first;
+
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end(); cand++ ){
 
-			double r = (*cand) -> rate;
+			double r = (*cand) -> rate * (sp -> clones);
 			double lower = runningTotal / rateSum;
 			double upper = (runningTotal + r) / rateSum;
 
@@ -371,4 +403,44 @@ std::cout << ">>>>>>>>>>>>Picking beacon candidate..." << std::endl;
 		}
 	}
 	return NULL;
+}
+
+
+bool BeaconChannel::matchClone( SystemProcess *newSp, SystemProcess *existingSp){
+
+#if DEBUG
+std::cout << "Matching clones...." << std::endl;
+std::cout << "System Processes: " << existingSp << " " << newSp << std::endl;
+std::cout << "Potential Beacon Receives: " << _potentialBeaconReceiveCands.count(existingSp) << " " << _potentialBeaconReceiveCands.count(newSp) << std::endl;
+std::cout << "Active Beacon Receives: " << _activeBeaconReceiveCands.count(existingSp) << " " << _activeBeaconReceiveCands.count(newSp) << std::endl;
+std::cout << "Beacon Sends: " << _sendCands.count(existingSp) << " " << _sendCands.count(newSp) << std::endl;
+#endif
+
+	if ( _potentialBeaconReceiveCands[existingSp].size() == 0 && _potentialBeaconReceiveCands[newSp].size() == 0
+	  && _activeBeaconReceiveCands[existingSp].size() == 0 && _activeBeaconReceiveCands[newSp].size() == 0
+	  && _sendCands[existingSp].size() == 0 && _sendCands[newSp].size() == 0) return true;
+
+	assert(_potentialBeaconReceiveCands[existingSp].size() == _potentialBeaconReceiveCands[newSp].size());
+	assert(_activeBeaconReceiveCands[existingSp].size() == _activeBeaconReceiveCands[newSp].size());
+	assert(_sendCands[existingSp].size() == _sendCands[newSp].size());
+
+	bool matchPotReceives = std::is_permutation(_potentialBeaconReceiveCands[newSp].begin(), _potentialBeaconReceiveCands[newSp].end(), _potentialBeaconReceiveCands[existingSp].begin(), compareCandidates);
+	bool matchActReceives = std::is_permutation(_activeBeaconReceiveCands[newSp].begin(), _activeBeaconReceiveCands[newSp].end(), _activeBeaconReceiveCands[existingSp].begin(), compareCandidates);
+	bool matchSends = std::is_permutation(_sendCands[newSp].begin(), _sendCands[newSp].end(), _sendCands[existingSp].begin(), compareCandidates);
+
+	if (matchPotReceives and matchActReceives and matchSends) return true;
+	else return false;
+}
+
+
+void BeaconChannel::cleanCloneFromChannel( SystemProcess *sp ){
+
+	auto prLoc = _potentialBeaconReceiveCands.find( sp );
+	if (prLoc != _potentialBeaconReceiveCands.end()) _potentialBeaconReceiveCands.erase( prLoc );
+
+	auto arLoc = _activeBeaconReceiveCands.find( sp );
+	if (arLoc != _activeBeaconReceiveCands.end()) _activeBeaconReceiveCands.erase( arLoc );
+
+	auto sLoc = _sendCands.find( sp );
+	if (sLoc != _sendCands.end()) _sendCands.erase( sLoc );
 }

@@ -1,4 +1,4 @@
-//DNA methylation damage model from Boemo, Cardelli, and Nieduszynski (2019)
+//DNA methylation damage model from Boemo, Cardelli, and Nieduszynski (2020)
 
 k_basal = 0.03125; //1.25 molecules per generation, 1.25*(1/40min)
 k_me = 0.0375; //1.5 molecules per generation, 1.5*(1/40min)
