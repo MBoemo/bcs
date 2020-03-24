@@ -1,5 +1,6 @@
 //EXPECTED BEHAVIOUR:
-//proc1 has a rather elaborate gate expression consisting of several negations.  Because the process will deadlock once i==4, it should increment parameter i starting at 0 and stopping when i = 3
+//proc1 has a rather elaborate gate expression consisting of several negations.
+//Because the process will deadlock once i==4, it should increment parameter i starting at 0 and stopping when i = 3
 
 //WHAT IT TESTS:
 // -correct infix and postfix parsing of logical not in gates

@@ -98,6 +98,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*r_cand) -> actionCandidate);
 				std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 
+				//fast pass if the parameter arity is wrong
+				if (setExpressions.size() != sEval.size()) continue;
+
 				//check each value against its set expression
 				bool allPassed = true;
 				for ( unsigned int i = 0; i < sEval.size(); i++ ){
@@ -140,7 +143,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 		
 				//check types
 				for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
-								
+
+				//fast pass if the parameter arity is wrong
+				if (setExpressions.size() != sEval.size()) continue;
 
 				//check each value against its set expression
 				bool allPassed = true;
@@ -182,6 +187,9 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 
 			MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >((*r_cand) -> actionCandidate);
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
+
+			//fast pass if the parameter arity is wrong
+			if (setExpressions.size() != sEval.size()) continue;
 
 			//check each value against its set expression
 			bool allPassed = true;
