@@ -789,6 +789,7 @@ std::cout << "   Condensing system processes... " << std::endl;
 
 			bool condensed = condenseSystem(*s);
 			if (condensed){
+				delete *s;
 				s = toAdd.erase(s);
 			}
 			else s++;

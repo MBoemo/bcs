@@ -9,7 +9,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define VERSION "1.0.1"
+#define VERSION "1.1.0"
 
 #include "blockParser.h"
 #include <memory>
