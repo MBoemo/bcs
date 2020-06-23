@@ -22,6 +22,6 @@ Here, processes ``A``, ``B``, and ``C`` represent populations of distinct chemic
 
 which creates a file abcsim.simulation.bcs.  We can plot the value of ``i`` in ``C`` over time: ::
 
-   python plot_bcs.py -a gain -p C -i count -o myplot.png
+   python utils/plot_bcs.py -a gain -p C -i count -o myplot.png ./abcsim.simulation.bcs
 
 The resulting plot file ``myplot.png`` will have five traces, one for each of the five simulations run, showing the value over time of parameter ``count`` for process ``C``.
