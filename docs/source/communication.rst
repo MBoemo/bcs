@@ -38,7 +38,7 @@ In the above example, the handshake could receive a single value (5) on channel 
             + [i==5] -> {@count![r],fast}.{drive,driveRate}.Car[i+1];
    Surveyor[c,cr] = {@count?[0..1](x),1}.Surveyor[c+1,cr+x];
 
-   nonRed*Car[0,0] || red*C[0,1] || Surveyor[0,0];
+   nonRed*Car[0,0] || red*Car[0,1] || Surveyor[0,0];
 
 The Surveyor process has two parameters, ``c`` and ``cr``, which keeps track of the total count and red cars, respectively. Car has an additional parameter ``r`` which is either 1 (red) or 0 (not red).  The range operator ``..`` in ``{@count?[0..1](x),1}`` means the set of all consecutive integers between 0 and 1 (inclusive). In this case, this is the set {0,1}. So the handshake receive action accepts one of two possible values and binds what it receives to ``x`` for later use.  If the car it handshakes with is red, it receives value 1.  When the surveyor process recurses, ``x=1`` so it increments the red car count ``cr`` by one.  If the car was not red, then the value received would have been 0 so that ``x=0`` when the the process recurses.  Therefore, ``cr+x = cr+0 = cr`` so the red car count is not increased.
 
