@@ -18,6 +18,7 @@
 #include <sstream>
 #include <iterator>
 #include "evaluate_trees.h"
+#include "BPTree.h"
 
 
 struct BetweenBounds {
@@ -55,10 +56,17 @@ class communicationDatabase{
 	private:
 		std::map< int, std::vector< std::vector< int > > > _arity2entries;
 		GlobalVariables _globalVars;
+		BPTree Tree;
 
 	public:
 		inline void push( std::vector<int> i ){
+			//std::cout << "in push" << std::endl;
 
+			databaseEntry *e = new databaseEntry;
+			e -> entry = i;
+			Tree.insertEntry(e);
+
+			/*
 			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
 			if (pos != _arity2entries[i.size()].end()) return;
 
@@ -70,8 +78,10 @@ class communicationDatabase{
 
 				_arity2entries[i.size()].push_back(i);
 			}
+			*/
 		}
 		inline void pop( std::vector<int> i ){
+			//std::cout << "in pop" << std::endl;
 
 			if ( _arity2entries.count( i.size() ) > 0 ){
 
@@ -85,7 +95,8 @@ class communicationDatabase{
 		}
 		inline bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
+			//std::cout << "in check" << std::endl;
+			//if (_arity2entries.count( setExpressions.size() ) == 0) return false;
 
 			std::vector< std::vector< std::pair<int, int> > > bounds;
 
@@ -95,7 +106,7 @@ class communicationDatabase{
 				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
 				bounds.push_back(b);
 			}
-			
+
 			std::vector< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
 
 			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
@@ -103,7 +114,8 @@ class communicationDatabase{
 		}
 		inline bool check_quick( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
+			//std::cout << "in check_quick" << std::endl;
+			//if (_arity2entries.count( setExpressions.size() ) == 0) return false;
 
 			std::vector< int > valueToFind;
 
@@ -114,17 +126,22 @@ class communicationDatabase{
 				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
 				valueToFind.push_back(n.getInt());
 			}
-			
+
+			return Tree.search(valueToFind,Tree.getRoot());
+
+			/*
 			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
 
 			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
 			else return false;
+			*/
 		}
 		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
+			//std::cout << "in findAll" << std::endl;
 			std::vector< std::vector< int > > out;
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
+			//if (_arity2entries.count( setExpressions.size() ) == 0) return out;
 
 			std::vector< std::vector< std::pair<int, int> > > bounds;
 
@@ -151,9 +168,10 @@ class communicationDatabase{
 		}
 		inline std::vector< std::vector< int > > findAll_trivial( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
+			//std::cout << "in findAll_trivial" << std::endl;
 			std::vector< std::vector< int > > out;
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
+			//if (_arity2entries.count( setExpressions.size() ) == 0) return out;
 
 			std::vector< int > value;
 
@@ -165,6 +183,15 @@ class communicationDatabase{
 				value.push_back(n.getInt());
 			}
 
+			if (Tree.search(value,Tree.getRoot())){
+				out.push_back(value);
+				return out;
+			}
+			else{
+				return out;
+			}
+
+			/*
 			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), value );
 
 			if ( pos != _arity2entries[setExpressions.size()].end() ){
@@ -172,6 +199,7 @@ class communicationDatabase{
 				return out;
 			}
 			else return out;
+			*/
 		}
 
 		void printContents( void ){ //for testing

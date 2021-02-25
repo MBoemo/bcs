@@ -1,0 +1,13 @@
+//EXPECTED BEHAVIOUR:
+//proc2 launches a bunch of beacons, the last of which should be received by proc1
+
+//WHAT IT TESTS:
+// -very basic functionality of B+ tree indexing
+// -B+ tree should be able to continually rebalance and so that the last beacon can still be efficiently received
+
+//process definitions
+proc1[ j ] = {msg?[0], 1}.{longAction,0.000001};
+proc2[ j ] = [j >= -1] -> {msg![j], 1}.{action1,1}.proc2[j-1];
+
+//system line
+proc1[3] || proc2[1000];

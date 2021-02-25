@@ -93,6 +93,10 @@ class Tree {
 				return false;
 			}
 		}
+		bool isEmpty(void){
+			if (_nodes.size() == 0) return true;
+			else return false;
+		}
 		std::vector< T * > getLeaves( void ){
 
 			assert( _rootSet );
