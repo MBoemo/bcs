@@ -41,7 +41,7 @@ class BPTree {
 
 	private:
 		//this should stay even so that splitting nodes works out nicely
-		int BP_MAX=10;
+		unsigned int BP_MAX=100;
 		BPNode *_root;
 		std::vector<BPNode *> _allNodes;
 		std::vector<databaseEntry *> _allData;
@@ -82,6 +82,7 @@ class BPTree {
 
 
 			BPNode *newNode = new BPNode;
+			newNode -> isRoot = false;
 			_allNodes.push_back(newNode);
 
 			//we're going to push this value up one level
@@ -139,7 +140,6 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				BPNode *newRoot = new BPNode;
 				_allNodes.push_back(newRoot);
 				cursor -> isRoot = false;
-				newNode -> isRoot = false;
 				newRoot -> isRoot = true;
 				newRoot -> isLeaf = false;
 				_root = newRoot;
@@ -172,6 +172,8 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 						}
 					}
 				}
+				newNode -> parent = parent;
+
 				//continue rebalancing the tree from the parent if we have to
 				if ( (parent -> key).size() > BP_MAX ){
 
@@ -203,6 +205,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 
 				//abort if the entry is already in the leaf
 				if (std::find( (targetLeaf -> key).begin(), (targetLeaf -> key).end(), (de -> entry)[0] ) != (targetLeaf -> key).end()) return;
+				_allData.push_back(de);
 
 				//insert into the leaf
 				if ((de -> entry)[0] > (targetLeaf -> key).back()){ //insert at the end
