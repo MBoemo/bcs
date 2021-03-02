@@ -424,7 +424,7 @@ std::cout << "Whole expression in RPN: ";
 }
 
 
-inline Numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
+Numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
 	Numerical out;
@@ -460,7 +460,7 @@ inline Numerical substituteVariable( Token *t, ParameterValues &param2value, Glo
 }
 
 
-inline bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
+bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
 	assert( t -> identify() == "Variable" );

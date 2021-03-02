@@ -83,6 +83,9 @@ class communicationDatabase{
 		inline void pop( std::vector<int> i ){
 			//std::cout << "in pop" << std::endl;
 
+			Tree.deleteEntry(i);
+
+			/*
 			if ( _arity2entries.count( i.size() ) > 0 ){
 
 				std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
@@ -92,6 +95,7 @@ class communicationDatabase{
 					_arity2entries[i.size()].erase(pos);
 				}
 			}
+			*/
 		}
 		inline bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 

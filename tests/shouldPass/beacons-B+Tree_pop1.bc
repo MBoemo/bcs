@@ -1,0 +1,14 @@
+//EXPECTED BEHAVIOUR:
+//proc2 launches a bunch of beacons, the last of which is killed by proc1 where it then shouldn't be able to be received
+
+//WHAT IT TESTS:
+// -very basic functionality of B+ tree indexing
+// -B+ tree deletion should work as expected
+
+//process definitions
+proc1[   ] = {@startProc1?[0],1}.{msg#[0], 1}.{msg?[0], 1}.{longAction,0.000001};
+proc2[ j ] = [j > -1] -> {msg![j], 1}.{action1,1}.proc2[j-1]
+           + [j == -1] -> {@startProc1![0],1};
+
+//system line
+proc1[] || proc2[1000];
