@@ -82,11 +82,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added send to receives that are already there
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		std::vector<Numerical> sEval_n = (*addedSend) -> rangeEvaluation;
-		std::vector<int> sEval;
-		
-		//check types
-		for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
+		std::vector<int> sEval = (*addedSend) -> sendReceiveParameters;
 
 		for ( auto receive = _hsReceive_Sp2Candidates.begin(); receive != _hsReceive_Sp2Candidates.end(); receive++ ){
 
@@ -138,11 +134,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 
 			for ( auto s_cand = (send -> second).begin(); s_cand != (send -> second).end(); s_cand++ ){
 
-				std::vector<Numerical> sEval_n = (*s_cand) -> rangeEvaluation;
-				std::vector<int> sEval;
-		
-				//check types
-				for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
+				std::vector<int> sEval = (*s_cand) -> sendReceiveParameters;
 
 				//fast pass if the parameter arity is wrong
 				if (setExpressions.size() != sEval.size()) continue;
@@ -173,12 +165,7 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 	//match added sends to added receives
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
 
-		std::vector<Numerical> sEval_n = (*addedSend) -> rangeEvaluation;
-		std::vector<int> sEval;
-		
-		//check types
-		for ( auto s = sEval_n.begin(); s < sEval_n.end(); s++) sEval.push_back( (*s).getInt() );
-
+		std::vector<int> sEval = (*addedSend) -> sendReceiveParameters;
 
 		for ( auto r_cand = _receiveToAdd.begin(); r_cand != _receiveToAdd.end(); r_cand++ ){
 
@@ -332,14 +319,6 @@ std::cout << std::endl;
 std::cout << "associated with sp: " << sc -> processInSystem << std::endl;
 #endif
 
-	//check parameter types
-	Block *b = sc -> actionCandidate;
-	Token *t = b -> getToken();
-	std::vector< Numerical > params = sc -> rangeEvaluation;
-	for ( unsigned int i = 0; i < params.size(); i++ ){
-
-		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-	}
 	_sendToAdd.push_back( sc );
 }
 
@@ -353,14 +332,6 @@ std::cout << std::endl;
 std::cout << "associated with sp: " << rc -> processInSystem << std::endl;
 #endif
 
-	//check parameter types
-	Block *b = rc -> actionCandidate;
-	Token *t = b -> getToken();
-	std::vector< Numerical > params = rc -> rangeEvaluation;
-	for ( unsigned int i = 0; i < params.size(); i++ ){
-
-		if ( params[i].isDouble() ) throw WrongType(t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-	}
 	_receiveToAdd.push_back( rc );
 }
 

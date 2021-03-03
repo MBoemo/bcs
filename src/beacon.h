@@ -59,45 +59,19 @@ class communicationDatabase{
 		BPTree Tree;
 
 	public:
-		inline void push( std::vector<int> i ){
+		void push( std::vector<int> i ){
 			//std::cout << "in push" << std::endl;
 
 			databaseEntry *e = new databaseEntry;
 			e -> entry = i;
 			Tree.insertEntry(e);
-
-			/*
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
-			if (pos != _arity2entries[i.size()].end()) return;
-
-			if ( _arity2entries.count(i.size()) == 0 ){
-
-				_arity2entries[i.size()] = {i};
-			}			
-			else{
-
-				_arity2entries[i.size()].push_back(i);
-			}
-			*/
 		}
-		inline void pop( std::vector<int> i ){
+		void pop( std::vector<int> i ){
 			//std::cout << "in pop" << std::endl;
 
 			Tree.deleteEntry(i);
-
-			/*
-			if ( _arity2entries.count( i.size() ) > 0 ){
-
-				std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
-
-				if (pos != _arity2entries[i.size()].end()){
-
-					_arity2entries[i.size()].erase(pos);
-				}
-			}
-			*/
 		}
-		inline bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 			//std::cout << "in check" << std::endl;
 			//if (_arity2entries.count( setExpressions.size() ) == 0) return false;
@@ -116,31 +90,11 @@ class communicationDatabase{
 			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
 			else return false;
 		}
-		inline bool check_quick( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		bool check_quick(std::vector< int > &query){
 
-			//std::cout << "in check_quick" << std::endl;
-			//if (_arity2entries.count( setExpressions.size() ) == 0) return false;
-
-			std::vector< int > valueToFind;
-
-			//get the one value that the beacon can check
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
-				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-				valueToFind.push_back(n.getInt());
-			}
-
-			return Tree.search(valueToFind,Tree.getRoot());
-
-			/*
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
-			else return false;
-			*/
+			return Tree.search(query,Tree.getRoot());
 		}
-		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
 
 			//std::cout << "in findAll" << std::endl;
 			std::vector< std::vector< int > > out;
@@ -170,40 +124,18 @@ class communicationDatabase{
 
 			return out;
 		}
-		inline std::vector< std::vector< int > > findAll_trivial( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		std::vector< std::vector< int > > findAll_trivial( std::vector< int > &query ){
 
 			//std::cout << "in findAll_trivial" << std::endl;
 			std::vector< std::vector< int > > out;
 
-			//if (_arity2entries.count( setExpressions.size() ) == 0) return out;
-
-			std::vector< int > value;
-
-			//get the one value that the beacon can check
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
-				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-				value.push_back(n.getInt());
-			}
-
-			if (Tree.search(value,Tree.getRoot())){
-				out.push_back(value);
+			if (Tree.search(query,Tree.getRoot())){
+				out.push_back(query);
 				return out;
 			}
 			else{
 				return out;
 			}
-
-			/*
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), value );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ){
-				out.push_back(value);
-				return out;
-			}
-			else return out;
-			*/
 		}
 
 		void printContents( void ){ //for testing

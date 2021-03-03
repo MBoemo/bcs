@@ -218,7 +218,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 			for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
 				Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
-				(cand -> rangeEvaluation).push_back(paramEval);
+				(cand -> sendReceiveParameters).push_back(paramEval.getInt());
 			}
 
 			if ( _handshakes_Name2Channel.find( channelName ) != _handshakes_Name2Channel.end() ){
@@ -472,6 +472,7 @@ bool System::condenseSystem(SystemProcess *sp){
 
 	//get all the system processes that match on parse trees, parameter values, and local variables
 	std::vector<SystemProcess *> matchingProcesses;
+
 	std::list<SystemProcess *>::iterator pos = std::find_if(_currentProcesses.begin(),_currentProcesses.end(),findSp(sp));
 	while (pos != _currentProcesses.end()){
 
@@ -652,7 +653,9 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
 						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
 						
-							newSp -> localVariables[ bindingVars[i] ] = (beaconCand -> rangeEvaluation)[i];
+							Numerical n;
+							n.setInt((beaconCand -> sendReceiveParameters)[i]);
+							newSp -> localVariables[ bindingVars[i] ] = n;
 						}
 					}
 				}

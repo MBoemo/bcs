@@ -45,10 +45,31 @@ _database.printContents();
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			bool canReceive;
 			if (mrb -> usesSets()){
+
+				//get the bounds for each set expression
+				std::vector< std::vector< std::pair<int, int> > > bounds;
+				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					bounds.push_back(b);
+				}
+				cand -> receiveBounds = bounds;
+
 				canReceive = _database.check( setExpressions, currentParameters, _globalVars, sp -> localVariables );
 			}
 			else{
-				canReceive = _database.check_quick( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+
+				//get the one value that the beacon can check
+				std::vector< int > valueToFind;
+				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+					Numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+					valueToFind.push_back(n.getInt());
+				}
+				cand -> sendReceiveParameters = valueToFind;
+
+				canReceive = _database.check_quick( valueToFind );
 			}
 
 			if ( not canReceive ){//only do a beacon check if you can't receive
@@ -71,11 +92,39 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			std::vector< std::vector< int > > matchingParameters;
+			std::vector< int > valueToFind;
+			std::vector< std::vector< std::pair<int, int> > > boundsToFind;
+
 			if (mrb -> usesSets()){
+
+				//get the bounds for each set expression
+				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					boundsToFind.push_back(b);
+				}
+
 				matchingParameters = _database.findAll( setExpressions, currentParameters, _globalVars, sp -> localVariables );
 			}
 			else{
-				matchingParameters = _database.findAll_trivial( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+
+				//get the one value that the beacon can check
+				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
+
+					Numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+					valueToFind.push_back(n.getInt());
+				}
+
+				matchingParameters = _database.findAll_trivial( valueToFind );
+			}
+
+			Numerical rate;
+
+			//if we don't have binding variables where the rate can depend on what we receive, then we only have to call evalRPN_numerical once
+			if ( not mrb -> bindsVariable() ){
+
+				rate = evalRPN_numerical( mrb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
 			}
 
 			//build a candidate for each possible beacon receive on this parameter set
@@ -94,13 +143,13 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 						newRangeEval.push_back(n);
 						augmentedLocalVars[ bindingVarNames[i] ] = n;
 					}
+					rate = evalRPN_numerical( mrb -> getRate(), currentParameters, _globalVars, augmentedLocalVars );
 				}
 
-				Numerical rate = evalRPN_numerical( mrb -> getRate(), currentParameters, _globalVars, augmentedLocalVars );
 				if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, augmentedLocalVars, sp, parallelProcesses) );
 				cand -> rate = rate.doubleCast();
-				cand -> rangeEvaluation = newRangeEval;
+				cand -> sendReceiveParameters = *mp;
 				_activeBeaconReceiveCands[sp].push_back( cand );
 				candidatesLeft += sp -> clones;
 				rateSum += rate.doubleCast() * (sp -> clones);
@@ -110,6 +159,10 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 			if ( matchingParameters.size() == 0){
 
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
+
+				if (mrb -> usesSets()) cand -> receiveBounds = boundsToFind;
+				else cand -> sendReceiveParameters = valueToFind;
+
 				_potentialBeaconReceiveCands[sp].push_back( cand );
 			}
 
@@ -141,13 +194,13 @@ std::cout << t -> value() << std::endl;
 
 		//evaluate the expression
 		std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
-		std::vector<Numerical> param;
+		std::vector<int> param;
 		for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
 			Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
-			param.push_back(paramEval);
+			param.push_back(paramEval.getInt());
 		}
-		cand -> rangeEvaluation = param;
+		cand -> sendReceiveParameters = param;
 
 		_sendCands[sp].push_back( cand );
 		candidatesLeft += sp -> clones;
@@ -228,7 +281,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 			}
 			else{
-				canReceive = _database.check_quick( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
 			}
 
 			if ( (not canReceive and not mrb -> isCheck()) or (canReceive and mrb -> isCheck()) ){
@@ -266,7 +319,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 			}
 			else{
-				canReceive = _database.check_quick( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
 			}
 
 			if (mrb -> isCheck() and not canReceive){
@@ -285,7 +338,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 					matchingParameters = _database.findAll( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
 				}
 				else{
-					matchingParameters = _database.findAll_trivial( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+					matchingParameters = _database.findAll_trivial( (*cand) -> sendReceiveParameters );
 				}
 
 				//build a candidate for each possible beacon receive on this parameter set
@@ -310,7 +363,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 					if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
 					std::shared_ptr<Candidate> newCand( new Candidate(mrb, sp -> parameterValues, augmentedLocalVars, sp, (*cand) -> parallelProcesses) );
 					newCand -> rate = rate.doubleCast();
-					newCand -> rangeEvaluation = newRangeEval;
+					newCand -> sendReceiveParameters = *mp;
 					_activeBeaconReceiveCands[sp].push_back( newCand );
 					candidatesLeft += sp -> clones;
 					rateSum += rate.doubleCast() * (sp -> clones);

@@ -249,8 +249,8 @@ class SystemProcess{
 			localVariables = sp.localVariables;
 			clones = sp.clones;
 		}
-		friend bool operator== (const SystemProcess &sp1, const SystemProcess &sp2);
-		friend bool operator!= (const SystemProcess &sp1, const SystemProcess &sp2);
+		//friend bool operator== (const SystemProcess &sp1, const SystemProcess &sp2);
+		//friend bool operator!= (const SystemProcess &sp1, const SystemProcess &sp2);
 };
 
 
@@ -262,7 +262,8 @@ class Candidate{
 		std::map< std::string, Numerical > localVariables;
 		SystemProcess *processInSystem;
 		double rate = 0.0;
-		std::vector< Numerical > rangeEvaluation;
+		std::vector< int > sendReceiveParameters;
+		std::vector< std::vector< std::pair<int, int> > > receiveBounds;
 		std::list< SystemProcess > parallelProcesses;
 		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 

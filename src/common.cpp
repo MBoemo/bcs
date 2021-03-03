@@ -12,6 +12,12 @@ bool compareCandidates( std::shared_ptr<Candidate> &c1, std::shared_ptr<Candidat
 
 	//candidates match if they perform the same action block and have the same parallel process (e.g., same process -> process history)
 	if (c1 -> actionCandidate != c2 -> actionCandidate) return false;
-	bool processesMatch = std::is_permutation((c1 -> parallelProcesses).begin(), (c1 -> parallelProcesses).end(), (c2 -> parallelProcesses).begin());
+	bool processesMatch = std::is_permutation((c1 -> parallelProcesses).begin(), (c1 -> parallelProcesses).end(), (c2 -> parallelProcesses).begin(),compareSystemProcesses);
 	return processesMatch;
+}
+
+bool compareSystemProcesses(const SystemProcess &sp1, const SystemProcess &sp2){
+
+	if (sp1.parseTree == sp2.parseTree && sp1.parameterValues == sp2.parameterValues && sp1.localVariables == sp2.localVariables) return true;
+	else return false;
 }

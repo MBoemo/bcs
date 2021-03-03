@@ -500,7 +500,7 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
 				Numerical op_n = numptr -> getValue();
 				Numerical result;
 				if ( (*t) -> value() == "abs" ){
@@ -534,9 +534,9 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 
 				//upcast
@@ -600,7 +600,7 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 
 	if ( evalStack.top() -> identify() != "Numerical" ) throw SyntaxError( inputRPN[0], "Expression must evaluate to a numerical value." );
 
-	NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(evalStack.top());
+	NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
 	Numerical result = numptr -> getValue();
 	delete evalStack.top();
 
@@ -627,7 +627,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
 				Numerical op_n = numptr -> getValue();
 				Numerical result;
 				if ( (*t) -> value() == "abs" ){
@@ -661,9 +661,9 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 
 				//upcast
@@ -721,9 +721,9 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 
 				bool result;
@@ -761,9 +761,9 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				if (operand1 -> identify() != "Bool") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Bool") throw WrongType(*t,operand2 -> identify());
 				bool op1_d,op2_d;
-				BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand1);
+				BoolOperand *boolptr = static_cast<BoolOperand *>(operand1);
 				op1_d = boolptr -> getValue();
-				boolptr = dynamic_cast<BoolOperand *>(operand2);
+				boolptr = static_cast<BoolOperand *>(operand2);
 				op2_d = boolptr -> getValue();
 
 				bool result;
@@ -786,7 +786,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				evalStack.pop();
 				if (operand -> identify() != "Bool") throw WrongType(*t,operand -> identify());
 				bool op_b;
-				BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand);
+				BoolOperand *boolptr = static_cast<BoolOperand *>(operand);
 				op_b = boolptr -> getValue();
 
 				bool result = not op_b;
@@ -811,7 +811,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 	if ( evalStack.top() -> identify() != "Bool" ) throw SyntaxError( inputRPN[0], "Gate expression must evaluate to a bool." );
 
 	bool result;
-	BoolOperand *boolptr = dynamic_cast<BoolOperand *>(evalStack.top());
+	BoolOperand *boolptr = static_cast<BoolOperand *>(evalStack.top());
 	result = boolptr -> getValue();
 
 	delete evalStack.top();
@@ -1010,7 +1010,7 @@ std::cout << std::endl;
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
 				Numerical op_n = numptr -> getValue();
 				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1046,9 +1046,9 @@ std::cout << std::endl;
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1107,9 +1107,9 @@ std::cout << std::endl;
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1133,27 +1133,27 @@ std::cout << std::endl;
 				//get everything in set format
 				if (operand1 -> identify() == "Numerical"){
 
-					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 					Numerical op1_n = numptr -> getValue();
 					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 					op1_s = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
 				}
 				else{
 
-					SetOperand *setptr = dynamic_cast<SetOperand *>(operand1);
+					SetOperand *setptr = static_cast<SetOperand *>(operand1);
 					op1_s = setptr -> getValue();
 				}
 
 				if (operand2 -> identify() == "Numerical"){
 
-					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand2);
+					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand2);
 					Numerical op2_n = numptr -> getValue();
 					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 					op2_s = {std::make_pair(op2_n.getInt(), op2_n.getInt())};
 				}
 				else{
 
-					SetOperand *setptr = dynamic_cast<SetOperand *>(operand2);
+					SetOperand *setptr = static_cast<SetOperand *>(operand2);
 					op2_s = setptr -> getValue();
 				}
 
@@ -1194,14 +1194,14 @@ std::cout << std::endl;
 	std::vector<std::pair<int, int>> result;
 	if ( evalStack.top() -> identify() == "Numerical" ){
 
-		NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(evalStack.top());
+		NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
 		Numerical op1_n = numptr -> getValue();
 		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 		result = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
 	}
 	else{
 
-		SetOperand *setptr = dynamic_cast<SetOperand *>(evalStack.top());
+		SetOperand *setptr = static_cast<SetOperand *>(evalStack.top());
 		result = setptr -> getValue();
 	}
 	delete evalStack.top();
@@ -1240,7 +1240,7 @@ std::cout << std::endl;
 				RPNoperand *operand = evalStack.top();
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
 				Numerical op_n = numptr -> getValue();
 				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1276,9 +1276,9 @@ std::cout << std::endl;
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1337,9 +1337,9 @@ std::cout << std::endl;
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
@@ -1362,37 +1362,37 @@ std::cout << std::endl;
 				if (operand1 -> identify() != "Numerical" and operand1 -> identify() != "Bool") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical" and operand2 -> identify() != "Bool") throw WrongType(*t,operand2 -> identify());
 				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
-				numptr = dynamic_cast<NumericalOperand *>(operand2);
+				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
 				
 				//get everything in bool format
 				bool op1_s;
 				if (operand1 -> identify() == "Numerical"){
 
-					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand1);
+					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 					Numerical op1_n = numptr -> getValue();
 					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 					op1_s = op1_n.getInt() == toTest;
 				}
 				else{
 
-					BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand1);
+					BoolOperand *boolptr = static_cast<BoolOperand *>(operand1);
 					op1_s = boolptr -> getValue();
 				}
 
 				bool op2_s;
 				if (operand2 -> identify() == "Numerical"){
 
-					NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(operand2);
+					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand2);
 					Numerical op2_n = numptr -> getValue();
 					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 					op2_s = op2_n.getInt() == toTest;
 				}
 				else{
 
-					BoolOperand *boolptr = dynamic_cast<BoolOperand *>(operand2);
+					BoolOperand *boolptr = static_cast<BoolOperand *>(operand2);
 					op2_s = boolptr -> getValue();
 				}
 
@@ -1430,14 +1430,14 @@ std::cout << std::endl;
 	bool result;
 	if ( evalStack.top() -> identify() == "Numerical" ){
 
-		NumericalOperand *numptr = dynamic_cast<NumericalOperand *>(evalStack.top());
+		NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
 		Numerical op1_n = numptr -> getValue();
 		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 		result = op1_n.doubleCast() == toTest;
 	}
 	else{
 
-		BoolOperand *boolptr = dynamic_cast<BoolOperand *>(evalStack.top());
+		BoolOperand *boolptr = static_cast<BoolOperand *>(evalStack.top());
 		result = boolptr -> getValue();
 	}
 	delete evalStack.top();

@@ -14,14 +14,17 @@
 #include "blockParser.h"
 #include <memory>
 
+bool compareSystemProcesses(const SystemProcess &sp1, const SystemProcess &sp2);
+
+
 struct findSp{
 
 	findSp( SystemProcess *toCompare) : compareAgainst {toCompare} {}
 	bool operator()( SystemProcess *toCompare){
 
 		for (auto i = compareAgainst.begin(); i != compareAgainst.end(); i++){
-
-			if (*toCompare == **i) return true;
+			//if (*toCompare == **i) return true;
+			if (compareSystemProcesses(*toCompare,**i)) return true;
 		}
 		return false;
 	}
