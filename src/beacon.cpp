@@ -55,7 +55,7 @@ _database.printContents();
 				}
 				cand -> receiveBounds = bounds;
 
-				canReceive = _database.check( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+				canReceive = _database.check( bounds );
 			}
 			else{
 
@@ -104,7 +104,7 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 					boundsToFind.push_back(b);
 				}
 
-				matchingParameters = _database.findAll( setExpressions, currentParameters, _globalVars, sp -> localVariables );
+				matchingParameters = _database.findAll( boundsToFind );
 			}
 			else{
 
@@ -278,7 +278,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 			bool canReceive;
 			if (mrb -> usesSets()){
-				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				canReceive = _database.check( (*cand) -> receiveBounds );
 			}
 			else{
 				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
@@ -316,7 +316,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 			bool canReceive;
 			if (mrb -> usesSets()){
-				canReceive = _database.check( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+				canReceive = _database.check( (*cand) -> receiveBounds );
 			}
 			else{
 				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
@@ -335,7 +335,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 				std::vector< std::vector< int > > matchingParameters;
 				if (mrb -> usesSets()){
-					matchingParameters = _database.findAll( setExpressions, sp -> parameterValues, _globalVars, sp -> localVariables );
+					matchingParameters = _database.findAll( (*cand) -> receiveBounds );
 				}
 				else{
 					matchingParameters = _database.findAll_trivial( (*cand) -> sendReceiveParameters );

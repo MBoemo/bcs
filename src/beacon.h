@@ -71,57 +71,29 @@ class communicationDatabase{
 
 			Tree.deleteEntry(i);
 		}
-		bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		bool check( std::vector< std::vector< std::pair<int, int> > > &bounds){
 
-			//std::cout << "in check" << std::endl;
-			//if (_arity2entries.count( setExpressions.size() ) == 0) return false;
-
-			std::vector< std::vector< std::pair<int, int> > > bounds;
-
-			//get the bounds for each set expression
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
-				bounds.push_back(b);
+			//TODO: this only works with arity 1 for now
+			std::vector< std::pair<int, int> > toTest = bounds[0];
+			for (auto p = toTest.begin(); p < toTest.end(); p++){
+				if (Tree.search_bounds(p -> first, p -> second, Tree.getRoot())) return true;
 			}
-
-			std::vector< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
-			else return false;
+			return false;
 		}
 		bool check_quick(std::vector< int > &query){
 
 			return Tree.search(query,Tree.getRoot());
 		}
-		std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		std::vector< std::vector< int > > findAll( std::vector< std::vector< std::pair<int, int> > > &bounds ){
 
-			//std::cout << "in findAll" << std::endl;
+			//TODO: this only works with arity 1 for now
+			std::vector< std::pair<int, int> > toTest = bounds[0];
 			std::vector< std::vector< int > > out;
-
-			//if (_arity2entries.count( setExpressions.size() ) == 0) return out;
-
-			std::vector< std::vector< std::pair<int, int> > > bounds;
-
-			//get the bounds for each set expression
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
-				bounds.push_back(b);
+			std::vector< int > tempOut; ////just for now
+			for (auto p = toTest.begin(); p < toTest.end(); p++){
+				Tree.search_boundsReturnAll(p -> first, p -> second, Tree.getRoot(), tempOut);
 			}
-
-			std::vector< std::vector< int > >::iterator pos = _arity2entries[setExpressions.size()].begin();
-			while (pos != _arity2entries[setExpressions.size()].end()){
-
-				pos = std::find_if(pos, _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
-
-				if ( pos != _arity2entries[setExpressions.size()].end() ){
-
-					out.push_back(*pos);
-					pos++;
-				}
-			}
-
+			out.push_back(tempOut); //just for now
 			return out;
 		}
 		std::vector< std::vector< int > > findAll_trivial( std::vector< int > &query ){

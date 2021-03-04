@@ -477,22 +477,174 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 
 				for (size_t i = 0; i < (cursor -> key).size(); i++){
 
-					if (query[0] <= (cursor -> key)[i]){
+					//stop early if we find the query in an internal node
+					if (query[0] == (cursor -> key)[i]) return true;
+
+					if (query[0] < (cursor -> key)[i]){
 
 						return search(query, (cursor -> Ptree)[i]);
 					}
 				}
 
 				//if we haven't recursed by now, then the query is bigger than the last key
-				assert(query[0] > (cursor -> key).back());
+				assert(query[0] >= (cursor -> key).back());
 				return search(query, (cursor -> Ptree).back());
+			}
+		}
+		bool search_bounds(int lb, int ub, BPNode *cursor){
+			//std::cout << "in search bounds" << std::endl;
+
+			//trivial exit if the tree is empty
+			if (_isEmpty) return false;
+
+			if (cursor -> isLeaf){
+				//if we've reached a leaf, then return true if there's any overlap at all between the key range and [lb,ub]
+
+				if (ub < (cursor -> key).front()) return false;
+				else if ((cursor -> key).back() < lb) return false;
+				else{
+
+					for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+						if (lb <= (cursor -> key)[i] and (cursor -> key)[i] <= ub){
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+			else{ //if we're not in a leaf, keep recursing down
+
+				if (ub < (cursor -> key).front()){
+
+					return search_bounds(lb, ub, (cursor -> Ptree).front());
+				}
+				else if ((cursor -> key).back() <= lb){
+
+					return search_bounds(lb, ub, (cursor -> Ptree).back());
+				}
+				else{
+
+					//find the tree pointer that contains the appropriate node for lb
+					ssize_t lbIndex = -1;
+					for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+						if (lb < (cursor -> key)[i]){
+
+							lbIndex = i;
+							break;
+						}
+					}
+
+					//find the tree pointer that contains the appropriate node for ub
+					ssize_t ubIndex = -1;
+					if (ub >= (cursor -> key).back()){
+						ubIndex = (cursor -> Ptree).size()-1;
+					}
+					else{
+						for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+							if (ub < (cursor -> key)[i]){
+
+								ubIndex = i;
+								break;
+							}
+						}
+					}
+
+					assert( (lbIndex != -1) and (ubIndex != -1) );
+
+					if (ubIndex != lbIndex){
+						//if a node key lies in [lb,ub], then so will a data point and we're done
+						return true;
+					}
+					else if ((ub == lb) and (lb == (cursor -> key)[lbIndex])){
+						//if we're only looking for one value and we've found it in an internal node, we're done
+						return true;
+					}
+					else{
+						//the only case where we keep recursing down is if lbIndex == ubIndex, because otherwise we would have a key in [lb,ub]
+						assert(lbIndex == ubIndex);
+						return search_bounds(lb, ub, (cursor -> Ptree)[lbIndex]);
+					}
+				}
+			}
+		}
+		void search_boundsReturnAll(int lb, int ub, BPNode *cursor, std::vector<int> &values){
+			//std::cout << "in search bounds" << std::endl;
+
+			//trivial exit if the tree is empty
+			if (_isEmpty) return;
+
+			if (cursor -> isLeaf){
+				//if we've reached a leaf, then return true if there's any overlap at all between the key range and [lb,ub]
+
+				if (ub < (cursor -> key).front()) return;
+				else if ((cursor -> key).back() < lb) return;
+				else{
+
+					for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+						if (lb <= (cursor -> key)[i] and (cursor -> key)[i] <= ub){
+
+							//TODO: or just add the key....
+							values.push_back(((cursor -> Pdata)[i] -> entry)[0]);
+						}
+					}
+					return;
+				}
+			}
+			else{ //if we're not in a leaf, keep recursing down
+
+				if (ub < (cursor -> key).front()){
+
+					return search_boundsReturnAll(lb, ub, (cursor -> Ptree).front(), values);
+				}
+				else if ((cursor -> key).back() <= lb){
+
+					return search_boundsReturnAll(lb, ub, (cursor -> Ptree).back(), values);
+				}
+				else{
+
+					//find the tree pointer that contains the appropriate node for lb
+					ssize_t lbIndex = -1;
+					for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+						if (lb < (cursor -> key)[i]){
+
+							lbIndex = i;
+							break;
+						}
+					}
+
+					//find the tree pointer that contains the appropriate node for ub
+					ssize_t ubIndex = -1;
+					if (ub >= (cursor -> key).back()){
+						ubIndex = (cursor -> Ptree).size()-1;
+					}
+					else{
+						for (size_t i = 0; i < (cursor -> key).size(); i++){
+
+							if (ub < (cursor -> key)[i]){
+
+								ubIndex = i;
+								break;
+							}
+						}
+					}
+
+					assert( (lbIndex != -1) and (ubIndex != -1) );
+
+					for (ssize_t i = lbIndex; i < ubIndex; i++){
+
+						return search_boundsReturnAll(lb, ub, (cursor -> Ptree)[i], values);
+					}
+				}
 			}
 		}
 		BPNode *getRoot(void){
 			return _root;
 		}
 };
-
-
 
 #endif /* SRC_BPTREE_H_ */
