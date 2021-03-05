@@ -432,13 +432,10 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 		_candidatesLeft -= handshakesRemoved;
 	}
 
-	//reshuffle potential vs active beacon receives, but only do this if database was updated
+	//reshuffle potential vs active beacon receives, but only do this if database was updated, and only do it on the channel that was updated
 	if (databaseUpdated){
 
-		for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
-
-			(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
-		}
+		_beacons_Name2Channel[candToRemove -> beaconChannelName] -> updateBeaconCandidates(_candidatesLeft,_rateSum);
 	}
 
 #if DEBUG

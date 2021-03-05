@@ -25,81 +25,105 @@ class communicationDatabase{
 
 	private:
 		GlobalVariables _globalVars;
-		BPTree Tree;
+		BPTree<int> _UnaryTree;
+		std::map<unsigned int, BPTree<std::vector<int>>> _arity2Tree;
 
 	public:
 		void push( std::vector<int> i ){
 			//std::cout << "in push" << std::endl;
 
-			databaseEntry *e = new databaseEntry;
-			e -> entry = i;
-			Tree.insertEntry(e);
+			if (i.size() == 1){
+				databaseEntry<int> *e = new databaseEntry<int>;
+				e -> entry = i[0];
+				_UnaryTree.insertEntry(e);
+			}
+			else{
+
+				databaseEntry<std::vector<int>> *e = new databaseEntry<std::vector<int>>;
+				e -> entry = i;
+				_arity2Tree[i.size()].insertEntry(e);
+			}
 		}
 		void pop( std::vector<int> i ){
 			//std::cout << "in pop" << std::endl;
 
-			Tree.deleteEntry(i);
-		}
-		void getBoundsCombinations(std::vector< std::vector< std::pair<int, int> > > &input,
-				unsigned int dim,
-				std::vector<int> lbCarryOver,
-				std::vector<int> ubCarryOver,
-				std::vector<std::vector<int>> &lbOut,
-				std::vector<std::vector<int>> &ubOut){
-
-			for (size_t i = 0; i < input[dim].size(); i++){
-
-				std::vector<int> lbAppend = lbCarryOver;
-				std::vector<int> ubAppend = ubCarryOver;
-
-				lbAppend.push_back(input[dim][i].first);
-				ubAppend.push_back(input[dim][i].second);
-
-				if (dim < input.size() - 1){
-
-					getBoundsCombinations(input, dim+1, lbAppend, ubAppend, lbOut, ubOut);
-				}
-				else{
-
-					assert(lbAppend.size() == ubAppend.size());
-					lbOut.push_back(lbAppend);
-					ubOut.push_back(ubAppend);
-				}
-			}
+			if (i.size() == 1) _UnaryTree.deleteEntry(i[0]);
+			else _arity2Tree[i.size()].deleteEntry(i);
 		}
 		bool check( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub){
 
 			assert(lb.size() == ub.size());
-			for (size_t i = 0; i < lb.size(); i++){
-				if (Tree.search_bounds(lb[i], ub[i], Tree.getRoot())) return true;
+
+			if (lb[0].size() == 1){
+				for (size_t i = 0; i < lb.size(); i++){
+					if (_UnaryTree.search_bounds(lb[i][0], ub[i][0], _UnaryTree.getRoot())) return true;
+				}
+				return false;
+
 			}
-			return false;
+			else{
+				for (size_t i = 0; i < lb.size(); i++){
+					if (_arity2Tree[lb[0].size()].search_bounds(lb[i], ub[i], _arity2Tree[lb[0].size()].getRoot())) return true;
+				}
+				return false;
+			}
 		}
 		bool check_quick(std::vector< int > &query){
 
-			return Tree.search(query,Tree.getRoot());
+			if (query.size() == 1){
+
+				return _UnaryTree.search(query[0],_UnaryTree.getRoot());
+			}
+			else{
+
+				return _arity2Tree[query.size()].search(query,_arity2Tree[query.size()].getRoot());
+			}
 		}
 		std::vector< std::vector< int > > findAll( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub ){
 
 			assert(lb.size() == ub.size());
-
 			std::vector< std::vector< int > > out;
-			for (size_t i = 0; i < lb.size(); i++){
-				Tree.search_boundsReturnAll(lb[i], ub[i], Tree.getRoot(), out);
+
+			if (lb[0].size() == 1){
+
+				std::vector< int > temp;
+				for (size_t i = 0; i < lb.size(); i++){
+					_UnaryTree.search_boundsReturnAll(lb[i][0], ub[i][0], _UnaryTree.getRoot(), temp);
+				}
+				for (auto t = temp.begin(); t < temp.end(); t++) out.push_back({*t}); //TODO: this is a bodge in lieu of making this a template
+				return out;
 			}
-			return out;
+			else{
+
+				for (size_t i = 0; i < lb.size(); i++){
+					_arity2Tree[lb[0].size()].search_boundsReturnAll(lb[i], ub[i], _arity2Tree[lb[0].size()].getRoot(), out);
+				}
+				return out;
+			}
 		}
 		std::vector< std::vector< int > > findAll_trivial( std::vector< int > &query ){
 
 			//std::cout << "in findAll_trivial" << std::endl;
 			std::vector< std::vector< int > > out;
 
-			if (Tree.search(query,Tree.getRoot())){
-				out.push_back(query);
-				return out;
+			if (query.size() == 1){
+				if (_UnaryTree.search(query[0], _UnaryTree.getRoot())){
+					out.push_back({query[0]});
+					return out;
+				}
+				else{
+					return out;
+				}
 			}
 			else{
-				return out;
+
+				if (_arity2Tree[query.size()].search(query, _arity2Tree[query.size()].getRoot())){
+					out.push_back(query);
+					return out;
+				}
+				else{
+					return out;
+				}
 			}
 		}
 };

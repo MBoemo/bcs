@@ -68,6 +68,7 @@ _database.printContents();
 
 			//build the candidate
 			std::shared_ptr<Candidate> cand( new Candidate( mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
+			cand -> beaconChannelName = _channelName;
 			Numerical rate = evalRPN_numerical( b -> getRate(), currentParameters, _globalVars, sp -> localVariables );
 			if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
 			cand -> rate = rate.doubleCast();
@@ -186,6 +187,7 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 
 				if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, augmentedLocalVars, sp, parallelProcesses) );
+				cand -> beaconChannelName = _channelName;
 				cand -> rate = rate.doubleCast();
 				cand -> sendReceiveParameters = *mp;
 				_activeBeaconReceiveCands[sp].push_back( cand );
@@ -197,6 +199,7 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 			if ( matchingParameters.size() == 0){
 
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
+				cand -> beaconChannelName = _channelName;
 
 				if (mrb -> usesSets()){
 					cand -> receiveBounds_lb = lb;
@@ -230,7 +233,7 @@ std::cout << t -> value() << std::endl;
 		if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
 
 		std::shared_ptr< Candidate > cand( new Candidate( msb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
-
+		cand -> beaconChannelName = _channelName;
 		cand -> rate = rate.doubleCast();
 
 		//evaluate the expression
@@ -403,6 +406,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 					Numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, augmentedLocalVars );
 					if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
 					std::shared_ptr<Candidate> newCand( new Candidate(mrb, sp -> parameterValues, augmentedLocalVars, sp, (*cand) -> parallelProcesses) );
+					newCand -> beaconChannelName = _channelName;
 					newCand -> rate = rate.doubleCast();
 					newCand -> sendReceiveParameters = *mp;
 					_activeBeaconReceiveCands[sp].push_back( newCand );

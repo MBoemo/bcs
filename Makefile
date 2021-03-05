@@ -2,8 +2,8 @@ CC = gcc
 CXX = g++
 DEBUG = -g
 LIBFLAGS =
-CXXFLAGS = -Wall -O3 -fopenmp -std=c++11 $(DEBUG)
-CFLAGS = -Wall -O3 -std=c99 $(DEBUG)
+CXXFLAGS = -Wall -O2 -fopenmp -std=c++11 $(DEBUG)
+CFLAGS = -Wall -O2 -std=c99 $(DEBUG)
 
 #to use openMP on OSX
 UNAME := $(shell uname)
