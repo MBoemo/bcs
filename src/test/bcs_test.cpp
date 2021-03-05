@@ -56,7 +56,7 @@ Arguments parseTestArguments( int argc, char** argv ){
 	/*defaults - we'll override these if the option was specified by the user */
 	args.outputFilename = "test.simulation.bcs";
 	args.threads = 1;
-	args.numOfSimulations = 1000;
+	args.numOfSimulations = 100;
 	args.maxTrans = 1000000;
 	args.maxDuration = std::numeric_limits<double>::max();
 	args.shouldFail = false;

@@ -51,30 +51,30 @@ class BPTree {
 			//trivial exit if the root is also a leaf
 			if (cursor -> isLeaf) return cursor;
 
-			for (size_t i = 0; i < (cursor -> key).size(); i++){
+			auto it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), query);
+			if (it != (cursor -> key).end()){
 
-				if (query < (cursor -> key)[i]){
+				unsigned int index = it - (cursor -> key).begin();
 
-					if ((cursor -> Ptree)[i] -> isLeaf){//if we found a leaf node, then we're done
+				if ((cursor -> Ptree)[index] -> isLeaf){//if we found a leaf node, then we're done
 
-						return (cursor -> Ptree)[i];
-					}
-					else{//otherwise keep recursing down
+					return (cursor -> Ptree)[index];
+				}
+				else{//otherwise keep recursing down
 
-						return searchReturn(query, (cursor -> Ptree)[i]);
-					}
+					return searchReturn(query, (cursor -> Ptree)[index]);
 				}
 			}
+			else{
+				assert(query >= (cursor -> key).back());
+				if ((cursor -> Ptree).back() -> isLeaf){//if we found a leaf node, then we're done
 
-			//if we haven't recursed by now, then the query is bigger than the last key
-			assert(query >= (cursor -> key).back());
-			if ((cursor -> Ptree).back() -> isLeaf){//if we found a leaf node, then we're done
+					return (cursor -> Ptree).back();
+				}
+				else{//otherwise keep recursing down
 
-				return (cursor -> Ptree).back();
-			}
-			else{//otherwise keep recursing down
-
-				return searchReturn(query, (cursor -> Ptree).back());
+					return searchReturn(query, (cursor -> Ptree).back());
+				}
 			}
 		}
 		void rebalance(BPNode *cursor){
@@ -159,16 +159,11 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 					(parent -> Ptree).push_back(newNode);
 				}
 				else{
-					for (size_t i = 0; i < (parent -> key).size(); i++){
 
-						if (pushUp < (parent -> key)[i]){
-
-							//insert the key and data pointer
-							(parent -> key).insert((parent -> key).begin()+i,pushUp);
-							(parent -> Ptree).insert((parent -> Ptree).begin()+i+1,newNode);//the +1 here is because we want to insert to the right of the key
-							break;
-						}
-					}
+					auto it = std::upper_bound((parent -> key).begin(),(parent -> key).end(), pushUp);
+					unsigned int index = it - (parent -> key).begin();
+					(parent -> key).insert((parent -> key).begin()+index,pushUp);
+					(parent -> Ptree).insert((parent -> Ptree).begin()+index+1,newNode);//the +1 here is because we want to insert to the right of the key
 				}
 				newNode -> parent = parent;
 
@@ -422,16 +417,11 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 					(targetLeaf -> Pdata).push_back(de);
 				}
 				else{ //insert internally
-					for (size_t i = 0; i < (targetLeaf -> key).size(); i++){
 
-						if ((de -> entry) < (targetLeaf -> key)[i]){
-
-							//insert the key and data pointer
-							(targetLeaf -> key).insert((targetLeaf -> key).begin()+i, de -> entry);
-							(targetLeaf -> Pdata).insert((targetLeaf -> Pdata).begin()+i,de);
-							break;
-						}
-					}
+					auto it = std::upper_bound((targetLeaf -> key).begin(),(targetLeaf -> key).end(), de -> entry);
+					unsigned int index = it - (targetLeaf -> key).begin();
+					(targetLeaf -> key).insert((targetLeaf -> key).begin()+index, de -> entry);
+					(targetLeaf -> Pdata).insert((targetLeaf -> Pdata).begin()+index,de);
 				}
 
 				//rebalance the tree from the leaf if we have to
@@ -474,20 +464,21 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 			}
 			else{ //if we're not in a leaf, keep recursing down
 
-				for (size_t i = 0; i < (cursor -> key).size(); i++){
+				auto it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), query);
+				if (it != (cursor -> key).end()){
+
+					unsigned int index = it - (cursor -> key).begin();
 
 					//stop early if we find the query in an internal node
-					if (query == (cursor -> key)[i]) return true;
+					if (query == (cursor -> key)[index]) return true;
 
-					if (query < (cursor -> key)[i]){
-
-						return search(query, (cursor -> Ptree)[i]);
-					}
+					return search(query, (cursor -> Ptree)[index]);
 				}
-
-				//if we haven't recursed by now, then the query is bigger than the last key
-				assert(query >= (cursor -> key).back());
-				return search(query, (cursor -> Ptree).back());
+				else{
+					//if we haven't recursed by now, then the query is bigger than the last key
+					assert(query >= (cursor -> key).back());
+					return search(query, (cursor -> Ptree).back());
+				}
 			}
 		}
 		bool search_bounds(std::vector<int> &lb, std::vector<int> &ub, BPNode *cursor){
@@ -502,7 +493,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				if (ub < (cursor -> key).front()) return false;
 				else if ((cursor -> key).back() < lb) return false;
 				else{
-
+					//TODO: replace with binary search
 					for (size_t i = 0; i < (cursor -> key).size(); i++){
 
 						if (lb <= (cursor -> key)[i] and (cursor -> key)[i] <= ub){
@@ -525,15 +516,9 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				else{
 
 					//find the tree pointer that contains the appropriate node for lb
-					ssize_t lbIndex = -1;
-					for (size_t i = 0; i < (cursor -> key).size(); i++){
-
-						if (lb < (cursor -> key)[i]){
-
-							lbIndex = i;
-							break;
-						}
-					}
+					auto lb_it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), lb);
+					assert( lb_it != (cursor -> key).end());
+					ssize_t lbIndex = lb_it - (cursor -> key).begin();
 
 					//find the tree pointer that contains the appropriate node for ub
 					ssize_t ubIndex = -1;
@@ -541,17 +526,12 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 						ubIndex = (cursor -> Ptree).size()-1;
 					}
 					else{
-						for (size_t i = 0; i < (cursor -> key).size(); i++){
 
-							if (ub < (cursor -> key)[i]){
-
-								ubIndex = i;
-								break;
-							}
-						}
+						auto ub_it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), ub);
+						assert( ub_it != (cursor -> key).end());
+						ubIndex = ub_it - (cursor -> key).begin();
 					}
-
-					assert( (lbIndex != -1) and (ubIndex != -1) );
+					assert(ubIndex != -1);
 
 					if (ubIndex != lbIndex){
 						//if a node key lies in [lb,ub], then so will a data point and we're done
@@ -581,12 +561,11 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				if (ub < (cursor -> key).front()) return;
 				else if ((cursor -> key).back() < lb) return;
 				else{
-
+					//TODO: replace with binary search
 					for (size_t i = 0; i < (cursor -> key).size(); i++){
 
 						if (lb <= (cursor -> key)[i] and (cursor -> key)[i] <= ub){
 
-							//TODO: or just add the key....
 							values.push_back((cursor -> Pdata)[i] -> entry);
 						}
 					}
@@ -606,15 +585,9 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				else{
 
 					//find the tree pointer that contains the appropriate node for lb
-					ssize_t lbIndex = -1;
-					for (size_t i = 0; i < (cursor -> key).size(); i++){
-
-						if (lb < (cursor -> key)[i]){
-
-							lbIndex = i;
-							break;
-						}
-					}
+					auto lb_it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), lb);
+					assert( lb_it != (cursor -> key).end());
+					ssize_t lbIndex = lb_it - (cursor -> key).begin();
 
 					//find the tree pointer that contains the appropriate node for ub
 					ssize_t ubIndex = -1;
@@ -622,17 +595,12 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 						ubIndex = (cursor -> Ptree).size()-1;
 					}
 					else{
-						for (size_t i = 0; i < (cursor -> key).size(); i++){
 
-							if (ub < (cursor -> key)[i]){
-
-								ubIndex = i;
-								break;
-							}
-						}
+						auto ub_it = std::upper_bound((cursor -> key).begin(),(cursor -> key).end(), ub);
+						assert( ub_it != (cursor -> key).end());
+						ubIndex = ub_it - (cursor -> key).begin();
 					}
-
-					assert( (lbIndex != -1) and (ubIndex != -1) );
+					assert(ubIndex != -1);
 
 					for (ssize_t i = lbIndex; i < ubIndex; i++){
 
