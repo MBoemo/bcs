@@ -30,7 +30,7 @@ class databaseEntry {
 class BPNode {
 
 	public:
-		std::vector<int> key;
+		std::vector<std::vector<int>> key;
 		std::vector<BPNode *> Ptree;
 		std::vector<databaseEntry *> Pdata;
 		BPNode *parent;
@@ -46,14 +46,14 @@ class BPTree {
 		bool _isEmpty = true;
 		//std::vector<BPNode *> _allNodes;
 		//std::vector<databaseEntry *> _allData;
-		BPNode* searchReturn(std::vector<int> & query, BPNode *cursor){
+		BPNode* searchReturn(std::vector<int> &query, BPNode *cursor){
 
 			//trivial exit if the root is also a leaf
 			if (cursor -> isLeaf) return cursor;
 
 			for (size_t i = 0; i < (cursor -> key).size(); i++){
 
-				if (query[0] < (cursor -> key)[i]){
+				if (query < (cursor -> key)[i]){
 
 					if ((cursor -> Ptree)[i] -> isLeaf){//if we found a leaf node, then we're done
 
@@ -67,7 +67,7 @@ class BPTree {
 			}
 
 			//if we haven't recursed by now, then the query is bigger than the last key
-			assert(query[0] >= (cursor -> key).back());
+			assert(query >= (cursor -> key).back());
 			if ((cursor -> Ptree).back() -> isLeaf){//if we found a leaf node, then we're done
 
 				return (cursor -> Ptree).back();
@@ -85,7 +85,7 @@ class BPTree {
 			newNode -> isRoot = false;
 
 			//we're going to push this value up one level
-			int pushUp = (cursor -> key)[BP_MAX/2 + 1];
+			std::vector<int> pushUp = (cursor -> key)[BP_MAX/2 + 1];
 
 #if DEBUG_BPTREE
 std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
@@ -100,8 +100,8 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				newNode -> isLeaf = true;
 
 				//split into halves, existing node keeps the lower half
-				std::vector<int> key_lo((cursor -> key).begin(), (cursor -> key).begin() + BP_MAX/2);
-				std::vector<int> key_hi((cursor -> key).begin() + BP_MAX/2, (cursor -> key).end());
+				std::vector< std::vector<int> > key_lo((cursor -> key).begin(), (cursor -> key).begin() + BP_MAX/2);
+				std::vector< std::vector<int> > key_hi((cursor -> key).begin() + BP_MAX/2, (cursor -> key).end());
 				std::vector<databaseEntry *> Pdata_lo((cursor -> Pdata).begin(), (cursor -> Pdata).begin() + BP_MAX/2);
 				std::vector<databaseEntry *> Pdata_hi((cursor -> Pdata).begin() + BP_MAX/2, (cursor -> Pdata).end());
 
@@ -116,8 +116,8 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				newNode -> isLeaf = false;
 
 				//split into halves, existing node keeps the lower half
-				std::vector<int> key_lo((cursor -> key).begin(), (cursor -> key).begin() + BP_MAX/2);
-				std::vector<int> key_hi((cursor -> key).begin() + BP_MAX/2 + 1, (cursor -> key).end());
+				std::vector< std::vector<int> > key_lo((cursor -> key).begin(), (cursor -> key).begin() + BP_MAX/2);
+				std::vector< std::vector<int> > key_hi((cursor -> key).begin() + BP_MAX/2 + 1, (cursor -> key).end());
 				std::vector<BPNode *> Ptree_lo((cursor -> Ptree).begin(), (cursor -> Ptree).begin() + BP_MAX/2);
 				std::vector<BPNode *> Ptree_hi((cursor -> Ptree).begin() + BP_MAX/2, (cursor -> Ptree).end());
 
@@ -179,14 +179,13 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				}
 			}
 		}
-		int getSubtreeMinimum(BPNode* cursor){
+		std::vector<int> getSubtreeMinimum(BPNode* cursor){
 
 			if (cursor -> isLeaf){
 
 				//return the value in the minimum data pointer
 				databaseEntry *leftMost = (cursor -> Pdata)[0];
-				int minValue = (leftMost -> entry)[0];
-				return minValue;
+				return leftMost -> entry;
 			}
 			else{
 
@@ -196,7 +195,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 		}
 		void manageUnderflow(std::vector<int> &query, BPNode* cursor){
 
-			auto it = std::find( (cursor -> key).begin(), (cursor -> key).end(), query[0] );
+			auto it = std::find( (cursor -> key).begin(), (cursor -> key).end(), query );
 			if (it != (cursor -> key).end()){ //the query is in the node
 
 				//delete the query from the node
@@ -225,7 +224,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 						assert( ((cursor -> Ptree).size() == 2) and ((cursor -> key).size() == 1) );
 
 						//get the minimum data value in the right subtree
-						int newRootKey = getSubtreeMinimum((cursor -> Ptree)[1]);
+						std::vector<int> newRootKey = getSubtreeMinimum((cursor -> Ptree)[1]);
 
 						//make that value the new root
 						(cursor -> key).clear();
@@ -310,7 +309,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 						if (hasLeft){
 
 							//get the key from the parent that separates the cursor node from the left neighbour
-							int separatingKey = (cursor -> parent -> key)[Ptree_index-1];
+							std::vector<int> separatingKey = (cursor -> parent -> key)[Ptree_index-1];
 							assert(separatingKey != (cursor -> key).front() and separatingKey != (leftNeighbour -> key).back());
 
 							//merge the keys together
@@ -341,7 +340,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 						else{ //hasRight
 
 							//get the key from the parent that separates the cursor node from the left neighbour
-							int separatingKey = (cursor -> parent -> key)[Ptree_index];
+							std::vector<int> separatingKey = (cursor -> parent -> key)[Ptree_index];
 							assert(separatingKey != (cursor -> key).back() and separatingKey != (rightNeighbour -> key).front());
 
 							//merge the keys together
@@ -404,7 +403,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				_root = node;
 				node -> isLeaf = true;
 				node -> isRoot = true;
-				(node -> key).push_back((de -> entry)[0]);
+				(node -> key).push_back(de -> entry);
 				(node -> Pdata).push_back(de);
 				_isEmpty = false;
 			}
@@ -414,21 +413,21 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				BPNode *targetLeaf = searchReturn(de -> entry, _root);
 
 				//abort if the entry is already in the leaf
-				if (std::find( (targetLeaf -> key).begin(), (targetLeaf -> key).end(), (de -> entry)[0] ) != (targetLeaf -> key).end()) return;
+				if (std::binary_search( (targetLeaf -> key).begin(), (targetLeaf -> key).end(), de -> entry )) return;
 
 				//insert into the leaf
-				if ((de -> entry)[0] > (targetLeaf -> key).back()){ //insert at the end
+				if (de -> entry > (targetLeaf -> key).back()){ //insert at the end
 
-					(targetLeaf -> key).push_back((de -> entry)[0]);
+					(targetLeaf -> key).push_back(de -> entry);
 					(targetLeaf -> Pdata).push_back(de);
 				}
 				else{ //insert internally
 					for (size_t i = 0; i < (targetLeaf -> key).size(); i++){
 
-						if ((de -> entry)[0] < (targetLeaf -> key)[i]){
+						if ((de -> entry) < (targetLeaf -> key)[i]){
 
 							//insert the key and data pointer
-							(targetLeaf -> key).insert((targetLeaf -> key).begin()+i,(de -> entry)[0]);
+							(targetLeaf -> key).insert((targetLeaf -> key).begin()+i, de -> entry);
 							(targetLeaf -> Pdata).insert((targetLeaf -> Pdata).begin()+i,de);
 							break;
 						}
@@ -466,7 +465,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 
 			if (cursor -> isLeaf){ //if we've reached a leaf, then the query should be one of the keys if it's in the database at all
 
-				if (std::find( (cursor -> key).begin(), (cursor -> key).end(), query[0] ) != (cursor -> key).end()){
+				if (std::binary_search( (cursor -> key).begin(), (cursor -> key).end(), query )){
 					return true;
 				}
 				else{
@@ -478,20 +477,20 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				for (size_t i = 0; i < (cursor -> key).size(); i++){
 
 					//stop early if we find the query in an internal node
-					if (query[0] == (cursor -> key)[i]) return true;
+					if (query == (cursor -> key)[i]) return true;
 
-					if (query[0] < (cursor -> key)[i]){
+					if (query < (cursor -> key)[i]){
 
 						return search(query, (cursor -> Ptree)[i]);
 					}
 				}
 
 				//if we haven't recursed by now, then the query is bigger than the last key
-				assert(query[0] >= (cursor -> key).back());
+				assert(query >= (cursor -> key).back());
 				return search(query, (cursor -> Ptree).back());
 			}
 		}
-		bool search_bounds(int lb, int ub, BPNode *cursor){
+		bool search_bounds(std::vector<int> &lb, std::vector<int> &ub, BPNode *cursor){
 			//std::cout << "in search bounds" << std::endl;
 
 			//trivial exit if the tree is empty
@@ -570,7 +569,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 				}
 			}
 		}
-		void search_boundsReturnAll(int lb, int ub, BPNode *cursor, std::vector<int> &values){
+		void search_boundsReturnAll(std::vector<int> &lb, std::vector<int> &ub, BPNode *cursor, std::vector<std::vector<int>> &values){
 			//std::cout << "in search bounds" << std::endl;
 
 			//trivial exit if the tree is empty
@@ -588,7 +587,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 						if (lb <= (cursor -> key)[i] and (cursor -> key)[i] <= ub){
 
 							//TODO: or just add the key....
-							values.push_back(((cursor -> Pdata)[i] -> entry)[0]);
+							values.push_back((cursor -> Pdata)[i] -> entry);
 						}
 					}
 					return;

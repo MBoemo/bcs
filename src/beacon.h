@@ -21,40 +21,9 @@
 #include "BPTree.h"
 
 
-struct BetweenBounds {
-
-	BetweenBounds( std::vector< std::vector< std::pair<int, int> > > i ) : i_ {i} {}
-	bool operator()(std::vector< int > i) {
-
-		for ( unsigned int dim = 0; dim < i.size(); dim++ ){ //go through dimensions
-
-			bool dimMatch = false;
-
-			for ( auto b = i_[dim].begin(); b < i_[dim].end(); b++ ){ //go through the pairs of bounds that we have
-
-				//testing
-				//std::cout << "<<<< " << (*b).first << " " << i[dim] << " " << (*b).second << std::endl;
-
-				if ( (*b).first <= i[dim] and i[dim] <= (*b).second ){
-
-					dimMatch = true;
-					break;
-				}
-			}
-
-			if ( not dimMatch ) return false;
-		}
-
-		return true;
-	}
-	std::vector< std::vector< std::pair<int, int> > > i_;
-};
-
-
 class communicationDatabase{
 
 	private:
-		std::map< int, std::vector< std::vector< int > > > _arity2entries;
 		GlobalVariables _globalVars;
 		BPTree Tree;
 
@@ -71,12 +40,38 @@ class communicationDatabase{
 
 			Tree.deleteEntry(i);
 		}
-		bool check( std::vector< std::vector< std::pair<int, int> > > &bounds){
+		void getBoundsCombinations(std::vector< std::vector< std::pair<int, int> > > &input,
+				unsigned int dim,
+				std::vector<int> lbCarryOver,
+				std::vector<int> ubCarryOver,
+				std::vector<std::vector<int>> &lbOut,
+				std::vector<std::vector<int>> &ubOut){
 
-			//TODO: this only works with arity 1 for now
-			std::vector< std::pair<int, int> > toTest = bounds[0];
-			for (auto p = toTest.begin(); p < toTest.end(); p++){
-				if (Tree.search_bounds(p -> first, p -> second, Tree.getRoot())) return true;
+			for (size_t i = 0; i < input[dim].size(); i++){
+
+				std::vector<int> lbAppend = lbCarryOver;
+				std::vector<int> ubAppend = ubCarryOver;
+
+				lbAppend.push_back(input[dim][i].first);
+				ubAppend.push_back(input[dim][i].second);
+
+				if (dim < input.size() - 1){
+
+					getBoundsCombinations(input, dim+1, lbAppend, ubAppend, lbOut, ubOut);
+				}
+				else{
+
+					assert(lbAppend.size() == ubAppend.size());
+					lbOut.push_back(lbAppend);
+					ubOut.push_back(ubAppend);
+				}
+			}
+		}
+		bool check( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub){
+
+			assert(lb.size() == ub.size());
+			for (size_t i = 0; i < lb.size(); i++){
+				if (Tree.search_bounds(lb[i], ub[i], Tree.getRoot())) return true;
 			}
 			return false;
 		}
@@ -84,16 +79,14 @@ class communicationDatabase{
 
 			return Tree.search(query,Tree.getRoot());
 		}
-		std::vector< std::vector< int > > findAll( std::vector< std::vector< std::pair<int, int> > > &bounds ){
+		std::vector< std::vector< int > > findAll( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub ){
 
-			//TODO: this only works with arity 1 for now
-			std::vector< std::pair<int, int> > toTest = bounds[0];
+			assert(lb.size() == ub.size());
+
 			std::vector< std::vector< int > > out;
-			std::vector< int > tempOut; ////just for now
-			for (auto p = toTest.begin(); p < toTest.end(); p++){
-				Tree.search_boundsReturnAll(p -> first, p -> second, Tree.getRoot(), tempOut);
+			for (size_t i = 0; i < lb.size(); i++){
+				Tree.search_boundsReturnAll(lb[i], ub[i], Tree.getRoot(), out);
 			}
-			out.push_back(tempOut); //just for now
 			return out;
 		}
 		std::vector< std::vector< int > > findAll_trivial( std::vector< int > &query ){
@@ -108,22 +101,6 @@ class communicationDatabase{
 			else{
 				return out;
 			}
-		}
-
-		void printContents( void ){ //for testing
-
-			std::cout << "   >>DATABASE CONTENTS: ";
-
-			for ( auto dbValues = _arity2entries.begin(); dbValues != _arity2entries.end(); dbValues++ ){ //go through arities	
-
-				for ( auto entry = (dbValues -> second).begin(); entry < (dbValues -> second).end(); entry++ ){
-
-					for ( unsigned int i = 0; i < (*entry).size(); i++ ) std::cout << (*entry)[i] << " ";
-
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
 		}
 };
 

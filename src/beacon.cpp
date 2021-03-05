@@ -12,6 +12,36 @@
 #include "common.h"
 #include <algorithm>
 
+
+void getBoundsCombinations(std::vector< std::vector< std::pair<int, int> > > &input,
+		unsigned int dim,
+		std::vector<int> lbCarryOver,
+		std::vector<int> ubCarryOver,
+		std::vector<std::vector<int>> &lbOut,
+		std::vector<std::vector<int>> &ubOut){
+
+	for (size_t i = 0; i < input[dim].size(); i++){
+
+		std::vector<int> lbAppend = lbCarryOver;
+		std::vector<int> ubAppend = ubCarryOver;
+
+		lbAppend.push_back(input[dim][i].first);
+		ubAppend.push_back(input[dim][i].second);
+
+		if (dim < input.size() - 1){
+
+			getBoundsCombinations(input, dim+1, lbAppend, ubAppend, lbOut, ubOut);
+		}
+		else{
+
+			assert(lbAppend.size() == ubAppend.size());
+			lbOut.push_back(lbAppend);
+			ubOut.push_back(ubAppend);
+		}
+	}
+}
+
+
 BeaconChannel::BeaconChannel( std::vector< std::string > name, GlobalVariables &globalVars ){
 
 	_channelName = name;
@@ -53,9 +83,12 @@ _database.printContents();
 					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
 					bounds.push_back(b);
 				}
-				cand -> receiveBounds = bounds;
 
-				canReceive = _database.check( bounds );
+				std::vector<int> lbCarryOver;
+				std::vector<int> ubCarryOver;
+				getBoundsCombinations(bounds, 0, lbCarryOver, ubCarryOver, cand -> receiveBounds_lb, cand -> receiveBounds_ub);
+
+				canReceive = _database.check( cand -> receiveBounds_lb, cand -> receiveBounds_ub );
 			}
 			else{
 
@@ -93,18 +126,23 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			std::vector< std::vector< int > > matchingParameters;
 			std::vector< int > valueToFind;
-			std::vector< std::vector< std::pair<int, int> > > boundsToFind;
+			std::vector< std::vector< int > > lb, ub;
 
 			if (mrb -> usesSets()){
 
 				//get the bounds for each set expression
+				std::vector< std::vector< std::pair<int, int> > > boundsToFind;
 				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
 					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
 					boundsToFind.push_back(b);
 				}
 
-				matchingParameters = _database.findAll( boundsToFind );
+				std::vector<int> lbCarryOver;
+				std::vector<int> ubCarryOver;
+				getBoundsCombinations(boundsToFind, 0, lbCarryOver, ubCarryOver, lb, ub);
+
+				matchingParameters = _database.findAll( lb, ub );
 			}
 			else{
 
@@ -160,7 +198,10 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 
-				if (mrb -> usesSets()) cand -> receiveBounds = boundsToFind;
+				if (mrb -> usesSets()){
+					cand -> receiveBounds_lb = lb;
+					cand -> receiveBounds_ub = ub;
+				}
 				else cand -> sendReceiveParameters = valueToFind;
 
 				_potentialBeaconReceiveCands[sp].push_back( cand );
@@ -278,7 +319,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 			bool canReceive;
 			if (mrb -> usesSets()){
-				canReceive = _database.check( (*cand) -> receiveBounds );
+				canReceive = _database.check( (*cand) -> receiveBounds_lb, (*cand) -> receiveBounds_ub );
 			}
 			else{
 				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
@@ -316,7 +357,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 			bool canReceive;
 			if (mrb -> usesSets()){
-				canReceive = _database.check( (*cand) -> receiveBounds );
+				canReceive = _database.check( (*cand) -> receiveBounds_lb, (*cand) -> receiveBounds_ub );
 			}
 			else{
 				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );
@@ -335,7 +376,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 				std::vector< std::vector< int > > matchingParameters;
 				if (mrb -> usesSets()){
-					matchingParameters = _database.findAll( (*cand) -> receiveBounds );
+					matchingParameters = _database.findAll( (*cand) -> receiveBounds_lb, (*cand) -> receiveBounds_ub );
 				}
 				else{
 					matchingParameters = _database.findAll_trivial( (*cand) -> sendReceiveParameters );

@@ -263,7 +263,8 @@ class Candidate{
 		SystemProcess *processInSystem;
 		double rate = 0.0;
 		std::vector< int > sendReceiveParameters;
-		std::vector< std::vector< std::pair<int, int> > > receiveBounds;
+		std::vector< std::vector< int > > receiveBounds_lb;
+		std::vector< std::vector< int > > receiveBounds_ub;
 		std::list< SystemProcess > parallelProcesses;
 		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
