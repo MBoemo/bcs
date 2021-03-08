@@ -63,7 +63,7 @@ class Tree {
 			assert( _rootSet );
 			return _parents.at( node );
 		}
-		T *getRoot( void ){
+		T *getRoot( void ) const{
 
 			assert( _rootSet );
 			return _root;

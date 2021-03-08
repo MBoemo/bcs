@@ -50,8 +50,6 @@ class BPTree {
 		unsigned int BP_MAX=100;
 		BPNode<T> *_root;
 		bool _isEmpty = true;
-		//std::vector<BPNode *> _allNodes;
-		//std::vector<databaseEntry *> _allData;
 		BPNode<T> *searchReturn(T &query, BPNode<T> *cursor){
 
 			//trivial exit if the root is also a leaf
@@ -392,8 +390,32 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				manageUnderflow(query, cursor -> parent);
 			}
 		}
+		void recursiveDestroy(BPNode<T> *cursor){
+
+			if (not cursor -> isLeaf){
+
+				for (auto n = (cursor -> Ptree).begin(); n < (cursor -> Ptree).end(); n++){
+
+						recursiveDestroy(*n);
+				}
+				delete cursor;
+			}
+			else{
+
+				for (auto n = (cursor -> Pdata).begin(); n < (cursor -> Pdata).end(); n++){
+
+						delete *n;
+				}
+				delete cursor;
+			}
+		}
 
 	public:
+		~BPTree(){
+			if (not _isEmpty){
+				recursiveDestroy(_root);
+			}
+		}
 		void insertEntry(databaseEntry<T> *de){
 			//std::cout << "in insertEntry" << std::endl;
 
@@ -451,7 +473,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 			if (not search(query, targetLeaf)) return;
 
 			//delete the entry and correct any underflow by recursing up the tree to the root
-			if (not targetLeaf -> isRoot) manageUnderflow(query, targetLeaf);
+			manageUnderflow(query, targetLeaf);
 		}
 		bool search(T &query, BPNode<T> *cursor){
 			//std::cout << "in search" << std::endl;

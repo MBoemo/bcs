@@ -23,7 +23,7 @@ struct findSp{
 	bool operator()( SystemProcess *toCompare){
 
 		for (auto i = compareAgainst.begin(); i != compareAgainst.end(); i++){
-			//if (*toCompare == **i) return true;
+
 			if (compareSystemProcesses(*toCompare,**i)) return true;
 		}
 		return false;

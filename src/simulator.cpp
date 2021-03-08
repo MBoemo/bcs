@@ -414,7 +414,7 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 	}
 
 	//erase from candidates
-	if ( inNonMsgCandidates and sp -> clones == 1 ) _nonMsgCandidates.erase( _nonMsgCandidates.find( sp ) );
+	if ( inNonMsgCandidates and sp -> clones == 1 ) _nonMsgCandidates.erase( sp );
 
 	//erase any beacon candidate that pertains to sp
 	for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
@@ -533,7 +533,7 @@ bool System::condenseSystem(SystemProcess *sp){
 		mp -> clones += 1;
 
 		//delete from non messaging actions
-		if (_nonMsgCandidates.count(sp) > 0) _nonMsgCandidates.erase( _nonMsgCandidates.find( sp ) );
+		if (_nonMsgCandidates.count(sp) > 0) _nonMsgCandidates.erase( sp );
 
 		//delete from handshakes
 		for ( auto hs = _handshakes_Name2Channel.begin(); hs != _handshakes_Name2Channel.end(); hs++ ){

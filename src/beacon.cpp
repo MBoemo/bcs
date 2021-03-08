@@ -20,6 +20,11 @@ void getBoundsCombinations(std::vector< std::vector< std::pair<int, int> > > &in
 		std::vector<std::vector<int>> &lbOut,
 		std::vector<std::vector<int>> &ubOut){
 
+	//this is triggered when one of the dimensions is the empty set
+	if (input[dim].size() == 0){
+		return;
+	}
+
 	for (size_t i = 0; i < input[dim].size(); i++){
 
 		std::vector<int> lbAppend = lbCarryOver;

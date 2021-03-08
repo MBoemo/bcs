@@ -229,6 +229,9 @@ class ParameterValues{
 			}
 		}
 	}
+	unsigned int getSize(void) const{
+		return values.size();
+	}
 	friend bool operator== (const ParameterValues &pv1, const ParameterValues &pv2);
 	friend bool operator!= (const ParameterValues &pv1, const ParameterValues &pv2);
 };

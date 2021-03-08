@@ -54,12 +54,14 @@ class communicationDatabase{
 
 			assert(lb.size() == ub.size());
 
+			//if we're querying the empty set, don't return anything
+			if (lb.size() == 0) return false;
+
 			if (lb[0].size() == 1){
 				for (size_t i = 0; i < lb.size(); i++){
 					if (_UnaryTree.search_bounds(lb[i][0], ub[i][0], _UnaryTree.getRoot())) return true;
 				}
 				return false;
-
 			}
 			else{
 				for (size_t i = 0; i < lb.size(); i++){
@@ -83,6 +85,9 @@ class communicationDatabase{
 
 			assert(lb.size() == ub.size());
 			std::vector< std::vector< int > > out;
+
+			//if we're querying the empty set, don't return anything
+			if (lb.size() == 0) return out;
 
 			if (lb[0].size() == 1){
 

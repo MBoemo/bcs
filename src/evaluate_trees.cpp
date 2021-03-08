@@ -1113,7 +1113,7 @@ std::cout << std::endl;
 				op2_n = numptr -> getValue();
 				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
+				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound must be greater than or equal to range lower bound.");
 
 				evalStack.push( new SetOperand({std::make_pair(op1_n.getInt(), op2_n.getInt())}) );
 				delete operand1; delete operand2;
