@@ -62,7 +62,6 @@ void BeaconChannel::addCandidate( Block *b, SystemProcess *sp, std::list< System
 
 #if DEBUG
 std::cout << std::endl;
-_database.printContents();
 #endif
 
 	if ( b -> identify() == "MessageReceive" ){
@@ -192,6 +191,8 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 
 				if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, augmentedLocalVars, sp, parallelProcesses) );
+				cand -> receiveBounds_lb = lb;
+				cand -> receiveBounds_ub = ub;
 				cand -> beaconChannelName = _channelName;
 				cand -> rate = rate.doubleCast();
 				cand -> sendReceiveParameters = *mp;
@@ -309,7 +310,6 @@ void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum)
 
 #if DEBUG
 std::cout << "   >>Updating candidates - moving from active to potential...." << std::endl;
-_database.printContents();
 for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
@@ -346,7 +346,6 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 #if DEBUG
 std::cout << "   >>Updating candidates - moving from potential to active...." << std::endl;
-_database.printContents();
 for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
@@ -354,7 +353,6 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 	//move any potentials to active if they can now receive
 	for ( auto candPair = _potentialBeaconReceiveCands.begin(); candPair != _potentialBeaconReceiveCands.end(); candPair++ ){
-
 
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end();){
 
@@ -411,6 +409,8 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 					Numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, augmentedLocalVars );
 					if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
 					std::shared_ptr<Candidate> newCand( new Candidate(mrb, sp -> parameterValues, augmentedLocalVars, sp, (*cand) -> parallelProcesses) );
+					newCand -> receiveBounds_lb = (*cand) -> receiveBounds_lb;
+					newCand -> receiveBounds_ub = (*cand) -> receiveBounds_ub;
 					newCand -> beaconChannelName = _channelName;
 					newCand -> rate = rate.doubleCast();
 					newCand -> sendReceiveParameters = *mp;
@@ -427,7 +427,6 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 #if DEBUG
 std::cout << "   >>Updating candidates - should be finished...." << std::endl;
-_database.printContents();
 for (auto a = _potentialBeaconReceiveCands.begin(); a != _potentialBeaconReceiveCands.end(); a++) std::cout << "   >>Potential receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _activeBeaconReceiveCands.begin(); a != _activeBeaconReceiveCands.end(); a++) std::cout << "   >>Active receives: " << a -> first << " " << (a -> second).size() << std::endl;
 for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >>Active sends: " << a -> first << " " << (a -> second).size() << std::endl;
@@ -438,7 +437,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, double uniformDraw, double rateSum){
 
 #if DEBUG
-std::cout << "   >>Picking beacon candidate..." << std::endl;
+std::cout << "Picking beacon candidate..." << std::endl;
 #endif
 
 	for ( auto candPair = _activeBeaconReceiveCands.begin(); candPair != _activeBeaconReceiveCands.end(); candPair++ ){
@@ -452,6 +451,10 @@ std::cout << "   >>Picking beacon candidate..." << std::endl;
 			double upper = (runningTotal + r) / rateSum;
 
 			if ( uniformDraw > lower and uniformDraw <= upper ){
+
+#if DEBUG
+std::cout << "Chose beacon receive candidate: " << *cand << std::endl;
+#endif
 
 				return *cand;
 			}
@@ -471,34 +474,20 @@ std::cout << "   >>Picking beacon candidate..." << std::endl;
 
 			if ( uniformDraw > lower and uniformDraw <= upper ){
 
+#if DEBUG
+std::cout << "Chose beacon send candidate: " << *cand << std::endl;
+#endif
+
 				//update the database for the send or kill that we chose
 				MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( (*cand) -> actionCandidate );
-				SystemProcess *sp = (*cand) -> processInSystem;
 				std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
 				if ( msb -> isKill() ){
 
-					//evaluate the expression
-					std::vector<int> param;
-					for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
-
-						Numerical paramEval = evalRPN_numerical( *exp, (*cand) -> parameterValues, _globalVars, sp -> localVariables );
-						if (paramEval.isDouble()) throw WrongType((*exp)[0],"Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-						param.push_back(paramEval.getInt());
-					}
-
-					_database.pop( param );
+					_database.pop( (*cand) -> sendReceiveParameters );
 				}
 				else if ( not msb -> isHandshake() ){
 
-					//evaluate the expression
-					std::vector<int> param;
-					for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
-
-						Numerical paramEval = evalRPN_numerical( *exp, (*cand) -> parameterValues, _globalVars, sp -> localVariables );
-						if (paramEval.isDouble()) throw WrongType((*exp)[0],"Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-						param.push_back(paramEval.getInt());
-					}
-					_database.push( param );
+					_database.push( (*cand) -> sendReceiveParameters );
 				}				
 				return *cand;
 			}
