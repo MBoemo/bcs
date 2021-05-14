@@ -1,0 +1,18 @@
+//EXPECTED BEHAVIOUR:
+//Three beacons are very quickly sent on channel msg by proc1.
+//The beacon receive by proc2 has a wildcard in its second argument such that it can bind values 1..3 as b and report the outcome
+
+//WHAT IT TESTS:
+// -wildcard characters in beacon receives work as they should
+// -variable binding
+// -unbiased results on a three-way choice
+
+//process definitions
+proc1[] = {msg![1,3],1000}.{msg![1,2],1000}.{msg![1,1],1000};
+proc2[] = {msg?[1,:](a,b),1}.( [b==1] -> {found1,1}
+							 + [b==2] -> {found2,1}
+							 + [b==3] -> {found3,1}
+							 );
+
+//system line
+proc1[] || proc2[];

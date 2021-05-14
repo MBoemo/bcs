@@ -368,7 +368,7 @@ for ( auto exp = _channelNames.begin(); exp < _channelNames.end(); exp++ ){
 	//check if it uses set operations so we can optimise it if not
 	for (auto paramToken = tokenisedParamArithmetic.begin(); paramToken < tokenisedParamArithmetic.end(); paramToken++){
 
-		if ( (*paramToken) -> identify() == "SetOperation" ){
+		if ( (*paramToken) -> identify() == "SetOperation" or (*paramToken) -> identify() == "Wildcard"){
 			_usesSets = true;
 			break;
 		}

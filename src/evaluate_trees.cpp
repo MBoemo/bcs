@@ -151,7 +151,7 @@ bool isValidInfixExpression( std::vector< Token * > inputExp ){
 	//terminate if we've got down to a single value
 	if (inputExp.size() == 1){
 
-		if (inputExp[0] -> identify() == "Variable" or inputExp[0] -> identify() == "IntLiteral" or inputExp[0] -> identify() == "DoubleLiteral") return true;
+		if (inputExp[0] -> identify() == "Variable" or inputExp[0] -> identify() == "IntLiteral" or inputExp[0] -> identify() == "DoubleLiteral" or inputExp[0] -> identify() == "Wildcard") return true;
 		else return false;
 	}
 
@@ -295,6 +295,11 @@ std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp ){
 
 	for ( auto t = inputExp.begin(); t < inputExp.end(); t++ ){
 
+		if ( (*t) -> identify() == "Wildcard" ){
+
+			assert(inputExp.size() == 1);
+			return inputExp;
+		}
 		if ( (*t) -> identify() == "Comma" ){
 
 			while( operatorStack.top() -> value() != "(" ){

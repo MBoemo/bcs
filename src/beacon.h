@@ -58,6 +58,7 @@ class communicationDatabase{
 			if (lb.size() == 0) return false;
 
 			if (lb[0].size() == 1){
+
 				for (size_t i = 0; i < lb.size(); i++){
 					if (_UnaryTree.search_bounds(lb[i][0], ub[i][0], _UnaryTree.getRoot())) return true;
 				}

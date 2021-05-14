@@ -11,6 +11,7 @@
 #include "beacon.h"
 #include "common.h"
 #include <algorithm>
+#include <limits>
 
 
 void getBoundsCombinations(std::vector< std::vector< std::pair<int, int> > > &input,
@@ -85,8 +86,13 @@ std::cout << std::endl;
 				std::vector< std::vector< std::pair<int, int> > > bounds;
 				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
-					bounds.push_back(b);
+					if (setExpressions[i][0] -> identify() == "Wildcard"){
+						bounds.push_back({{std::numeric_limits<int>::min(),std::numeric_limits<int>::max()}});
+					}
+					else{
+						std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+						bounds.push_back(b);
+					}
 				}
 
 				std::vector<int> lbCarryOver;
@@ -139,8 +145,13 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 				std::vector< std::vector< std::pair<int, int> > > boundsToFind;
 				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-					std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
-					boundsToFind.push_back(b);
+					if (setExpressions[i][0] -> identify() == "Wildcard"){
+						boundsToFind.push_back({{std::numeric_limits<int>::min(),std::numeric_limits<int>::max()}});
+					}
+					else{
+						std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+						boundsToFind.push_back(b);
+					}
 				}
 
 				std::vector<int> lbCarryOver;
@@ -327,7 +338,8 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 
 			bool canReceive;
 			if (mrb -> usesSets()){
-				canReceive = _database.check( (*cand) -> receiveBounds_lb, (*cand) -> receiveBounds_ub );
+				//if we're using sets, redo this every time - some other process may add an active beacon in the range that we need to account for
+				canReceive = false;
 			}
 			else{
 				canReceive = _database.check_quick( (*cand) -> sendReceiveParameters );

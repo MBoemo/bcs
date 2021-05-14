@@ -597,6 +597,7 @@ std::cout << "Total data pointers: " << _allData.size() << std::endl;
 							values.push_back((cursor -> Pdata)[i] -> entry);
 						}
 					}
+
 					return;
 				}
 			}
