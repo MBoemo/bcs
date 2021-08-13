@@ -10,4 +10,4 @@ proc1[ j ] = {msg?[0], 1}.{longAction,0.000001};
 proc2[ j ] = [j >= -1] -> {msg![j], 1}.{action1,1}.proc2[j-1];
 
 //system line
-proc1[3] || proc2[1000];
+proc1[3] || proc2[10000];

@@ -7,6 +7,7 @@
 //----------------------------------------------------------
 
 //#define DEBUG_BPTREE 1
+//#define DEBUG_BPTREE_VERBOSE 1
 
 #ifndef SRC_BPTREE_H_
 #define SRC_BPTREE_H_
@@ -17,12 +18,11 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iterator>
 #include <algorithm>
 #include "lexer.h"
 #include "error_handling.h"
 #include "parser.h"
-
-//T is either going to be an int or std::vector<int> depending on whether
 
 
 template <class T>
@@ -52,6 +52,14 @@ class BPTree {
 		bool _isEmpty = true;
 		BPNode<T> *searchReturn(T &query, BPNode<T> *cursor){
 
+#if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 1; i < (cursor -> key).size(); i++){
+	assert((cursor -> key)[i] != (cursor -> key)[i-1]);
+	assert((cursor -> key)[i] > (cursor -> key)[i-1]);
+}
+#endif
+
 			//trivial exit if the root is also a leaf
 			if (cursor -> isLeaf) return cursor;
 
@@ -59,6 +67,10 @@ class BPTree {
 			if (it != (cursor -> key).end()){
 
 				unsigned int index = it - (cursor -> key).begin();
+
+				if (index !=0){
+					assert(query >= (cursor -> key)[index-1]);
+				}
 
 				if ((cursor -> Ptree)[index] -> isLeaf){//if we found a leaf node, then we're done
 
@@ -84,14 +96,22 @@ class BPTree {
 		void rebalance(BPNode<T> *cursor){
 			//std::cout << "in rebalance" << std::endl;
 
-
 			BPNode<T> *newNode = new BPNode<T>;
 			newNode -> isRoot = false;
 
 			//we're going to push this value up one level
-			T pushUp = (cursor -> key)[BP_MAX/2 + 1];
+			T pushUp = (cursor -> key)[BP_MAX/2];
 
 #if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 1; i < (cursor -> key).size(); i++){
+	assert((cursor -> key)[i] != (cursor -> key)[i-1]);
+	assert((cursor -> key)[i] > (cursor -> key)[i-1]);
+}
+#endif
+
+
+#if DEBUG_BPTREE_VERBOSE
 std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 #endif
 
@@ -113,6 +133,20 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				cursor -> Pdata = Pdata_lo;
 				newNode -> key = key_hi;
 				newNode -> Pdata = Pdata_hi;
+#if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 0; i < (cursor -> key).size(); i++){
+	assert((cursor -> key)[i] < pushUp);
+}
+for (size_t i = 0; i < (newNode -> key).size(); i++){
+	if ((newNode -> key)[i] < pushUp){
+		std::cout << i << std::endl;
+		std::cout << (cursor -> key).size() << std::endl;
+		std::cout << (newNode -> key).size() << std::endl;
+	}
+	assert((newNode -> key)[i] >= pushUp);
+}
+#endif
 			}
 			else{
 				//for internal nodes, drop the value at BP_MAX/2 because we're pushing it up to the parent
@@ -122,13 +156,27 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				//split into halves, existing node keeps the lower half
 				std::vector< T > key_lo((cursor -> key).begin(), (cursor -> key).begin() + BP_MAX/2);
 				std::vector< T > key_hi((cursor -> key).begin() + BP_MAX/2 + 1, (cursor -> key).end());
-				std::vector<BPNode<T> *> Ptree_lo((cursor -> Ptree).begin(), (cursor -> Ptree).begin() + BP_MAX/2);
-				std::vector<BPNode<T> *> Ptree_hi((cursor -> Ptree).begin() + BP_MAX/2, (cursor -> Ptree).end());
+				std::vector<BPNode<T> *> Ptree_lo((cursor -> Ptree).begin(), (cursor -> Ptree).begin() + BP_MAX/2 + 1);
+				std::vector<BPNode<T> *> Ptree_hi((cursor -> Ptree).begin() + BP_MAX/2 + 1, (cursor -> Ptree).end());
 
 				cursor -> key = key_lo;
 				cursor -> Ptree = Ptree_lo;
 				newNode -> key = key_hi;
 				newNode -> Ptree = Ptree_hi;
+
+				assert((cursor -> key).size() + 1 == (cursor -> Ptree).size());
+				assert((newNode -> key).size() + 1 == (newNode -> Ptree).size());
+
+
+#if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 0; i < (cursor -> key).size(); i++){
+	assert((cursor -> key)[i] < pushUp);
+}
+for (size_t i = 0; i < (newNode -> key).size(); i++){
+	assert((newNode -> key)[i] >= pushUp);
+}
+#endif
 
 				//children of the new node now have a new parent
 				for (auto i = Ptree_hi.begin(); i < Ptree_hi.end(); i++){
@@ -164,10 +212,29 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				}
 				else{
 
+#if DEBUG_BPTREE
+//check if the value we're pushing up is already a parent key
+for (size_t i = 0; i < (parent -> key).size(); i++){
+	assert((parent -> key)[i] != pushUp);
+}
+#endif
+
+
+
 					auto it = std::upper_bound((parent -> key).begin(),(parent -> key).end(), pushUp);
 					unsigned int index = it - (parent -> key).begin();
 					(parent -> key).insert((parent -> key).begin()+index,pushUp);
+
+#if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 1; i < (parent -> key).size(); i++){
+	assert((parent -> key)[i] != (parent -> key)[i-1]);
+	assert((parent -> key)[i] > (parent -> key)[i-1]);
+}
+#endif
+
 					(parent -> Ptree).insert((parent -> Ptree).begin()+index+1,newNode);//the +1 here is because we want to insert to the right of the key
+					//std::cout << "end line" << std::endl;
 				}
 				newNode -> parent = parent;
 
@@ -439,7 +506,7 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 				if (std::binary_search( (targetLeaf -> key).begin(), (targetLeaf -> key).end(), de -> entry )) return;
 
 				//insert into the leaf
-				if (de -> entry > (targetLeaf -> key).back()){ //insert at the end
+				if (de -> entry >= (targetLeaf -> key).back()){ //insert at the end
 
 					(targetLeaf -> key).push_back(de -> entry);
 					(targetLeaf -> Pdata).push_back(de);
@@ -452,13 +519,21 @@ std::cout << "Rebalancing, pushing up: " << pushUp << std::endl;
 					(targetLeaf -> Pdata).insert((targetLeaf -> Pdata).begin()+index,de);
 				}
 
+#if DEBUG_BPTREE
+//assert that the keys are well-ordered
+for (size_t i = 1; i < (targetLeaf -> key).size(); i++){
+	assert((targetLeaf -> key)[i] != (targetLeaf -> key)[i-1]);
+	assert((targetLeaf -> key)[i] > (targetLeaf -> key)[i-1]);
+}
+#endif
+
 				//rebalance the tree from the leaf if we have to
 				if ( (targetLeaf -> key).size() > BP_MAX ){
 
 					rebalance(targetLeaf);
 				}
 			}
-#if DEBUG_BPTREE
+#if DEBUG_BPTREE_VERBOSE
 std::cout << "Added: " << (de -> entry)[0] << std::endl;
 std::cout << "Total nodes: " << _allNodes.size() << std::endl;
 std::cout << "Total data pointers: " << _allData.size() << std::endl;
