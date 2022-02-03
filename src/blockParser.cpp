@@ -715,6 +715,14 @@ void checkProcessDefinition( Block *b, Tree<Block> &bt, std::map< std::string, P
 
 		ProcessBlock *pb = dynamic_cast< ProcessBlock* >(b);
 		std::vector< std::vector<Token*> > parameterExpressions = pb -> getParameterExpressions();
+
+		//catch undefined processes called by other processes
+		size_t it = processName2Definition.count(pb -> getProcessName());
+		if (it == 0){
+			throw SyntaxError( b -> getToken(), "Thrown by block parser: Process not defined." );
+
+		}
+
 		if (parameterExpressions.size() != processName2Definition[pb -> getProcessName()].parameters.size()){
 
 			throw SyntaxError( b -> getToken(), "Thrown by block parser: Number of parameters specified do not match the process definition." );
@@ -736,10 +744,10 @@ void checkProcessDefinition( Block *b, Tree<Block> &bt, std::map< std::string, P
 std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess > > secondPassParse( std::vector< Tree<Token> > processDefPTs,
 		                                                                                             std::vector< Token* > tokenisedSystemLine,
 																									 GlobalVariables &globalVars ){
-//main function for second pass parsing.  sets the root of the new block tree, calls
-//secondParseProcessDef to fill out the tree, then substitutes all variables 
-//arguments:
-// - processDefPTs: the parse trees from the first round of parsing, just process and variable definitions
+	//main function for second pass parsing.  sets the root of the new block tree, calls
+	//secondParseProcessDef to fill out the tree, then substitutes all variables
+	//arguments:
+	// - processDefPTs: the parse trees from the first round of parsing, just process and variable definitions
 
 	/*second round parse of process definitions */
 	std::map< std::string, ProcessDefinition > processName2Definition;
