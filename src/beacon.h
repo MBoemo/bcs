@@ -18,176 +18,119 @@
 #include <sstream>
 #include <iterator>
 #include "evaluate_trees.h"
-
-
-struct BetweenBounds {
-
-	BetweenBounds( std::vector< std::vector< std::pair<int, int> > > i ) : i_ {i} {}
-	bool operator()(std::vector< int > i) {
-
-		for ( unsigned int dim = 0; dim < i.size(); dim++ ){ //go through dimensions
-
-			bool dimMatch = false;
-
-			for ( auto b = i_[dim].begin(); b < i_[dim].end(); b++ ){ //go through the pairs of bounds that we have
-
-				//testing
-				//std::cout << "<<<< " << (*b).first << " " << i[dim] << " " << (*b).second << std::endl;
-
-				if ( (*b).first <= i[dim] and i[dim] <= (*b).second ){
-
-					dimMatch = true;
-					break;
-				}
-			}
-
-			if ( not dimMatch ) return false;
-		}
-
-		return true;
-	}
-	std::vector< std::vector< std::pair<int, int> > > i_;
-};
+#include "BPTree.h"
 
 
 class communicationDatabase{
 
 	private:
-		std::map< int, std::vector< std::vector< int > > > _arity2entries;
 		GlobalVariables _globalVars;
+		BPTree<int> _UnaryTree;
+		std::map<unsigned int, BPTree<std::vector<int>>> _arity2Tree;
 
 	public:
-		inline void push( std::vector<int> i ){
+		void push( std::vector<int> i ){
+			//std::cout << "in push" << std::endl;
 
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
-			if (pos != _arity2entries[i.size()].end()) return;
-
-			if ( _arity2entries.count(i.size()) == 0 ){
-
-				_arity2entries[i.size()] = {i};
-			}			
+			if (i.size() == 1){
+				databaseEntry<int> *e = new databaseEntry<int>;
+				e -> entry = i[0];
+				_UnaryTree.insertEntry(e);
+			}
 			else{
 
-				_arity2entries[i.size()].push_back(i);
+				databaseEntry<std::vector<int>> *e = new databaseEntry<std::vector<int>>;
+				e -> entry = i;
+				_arity2Tree[i.size()].insertEntry(e);
 			}
 		}
-		inline void pop( std::vector<int> i ){
+		void pop( std::vector<int> i ){
+			//std::cout << "in pop" << std::endl;
 
-			if ( _arity2entries.count( i.size() ) > 0 ){
+			if (i.size() == 1) _UnaryTree.deleteEntry(i[0]);
+			else _arity2Tree[i.size()].deleteEntry(i);
+		}
+		bool check( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub){
 
-				std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[i.size()].begin(),_arity2entries[i.size()].end(), i);
+			assert(lb.size() == ub.size());
 
-				if (pos != _arity2entries[i.size()].end()){
+			//if we're querying the empty set, don't return anything
+			if (lb.size() == 0) return false;
 
-					_arity2entries[i.size()].erase(pos);
+			if (lb[0].size() == 1){
+
+				for (size_t i = 0; i < lb.size(); i++){
+					if (_UnaryTree.search_bounds(lb[i][0], ub[i][0], _UnaryTree.getRoot())) return true;
 				}
+				return false;
+			}
+			else{
+				for (size_t i = 0; i < lb.size(); i++){
+					if (_arity2Tree[lb[0].size()].search_bounds(lb[i], ub[i], _arity2Tree[lb[0].size()].getRoot())) return true;
+				}
+				return false;
 			}
 		}
-		inline bool check( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		bool check_quick(std::vector< int > &query){
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
+			if (query.size() == 1){
 
-			std::vector< std::vector< std::pair<int, int> > > bounds;
-
-			//get the bounds for each set expression
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
-				bounds.push_back(b);
+				return _UnaryTree.search(query[0],_UnaryTree.getRoot());
 			}
-			
-			std::vector< std::vector< int > >::iterator pos = std::find_if(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
+			else{
 
-			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
-			else return false;
-		}
-		inline bool check_quick( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
-
-			if (_arity2entries.count( setExpressions.size() ) == 0) return false;
-
-			std::vector< int > valueToFind;
-
-			//get the one value that the beacon can check
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
-				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-				valueToFind.push_back(n.getInt());
+				return _arity2Tree[query.size()].search(query,_arity2Tree[query.size()].getRoot());
 			}
-			
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), valueToFind );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ) return true;
-			else return false;
 		}
-		inline std::vector< std::vector< int > > findAll( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+		std::vector< std::vector< int > > findAll( std::vector< std::vector< int> > &lb, std::vector< std::vector< int> > &ub ){
 
+			assert(lb.size() == ub.size());
 			std::vector< std::vector< int > > out;
 
-			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
+			//if we're querying the empty set, don't return anything
+			if (lb.size() == 0) return out;
 
-			std::vector< std::vector< std::pair<int, int> > > bounds;
+			if (lb[0].size() == 1){
 
-			//get the bounds for each set expression
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				std::vector< std::pair<int, int > > b = evalRPN_set( setExpressions[i], param2value, _globalVars, localVariables );
-				bounds.push_back(b);
-			}
-
-			std::vector< std::vector< int > >::iterator pos = _arity2entries[setExpressions.size()].begin();
-			while (pos != _arity2entries[setExpressions.size()].end()){
-
-				pos = std::find_if(pos, _arity2entries[setExpressions.size()].end(), BetweenBounds(bounds) );
-
-				if ( pos != _arity2entries[setExpressions.size()].end() ){
-
-					out.push_back(*pos);
-					pos++;
+				std::vector< int > temp;
+				for (size_t i = 0; i < lb.size(); i++){
+					_UnaryTree.search_boundsReturnAll(lb[i][0], ub[i][0], _UnaryTree.getRoot(), temp);
 				}
-			}
-
-			return out;
-		}
-		inline std::vector< std::vector< int > > findAll_trivial( std::vector< std::vector< Token * > > setExpressions, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
-
-			std::vector< std::vector< int > > out;
-
-			if (_arity2entries.count( setExpressions.size() ) == 0) return out;
-
-			std::vector< int > value;
-
-			//get the one value that the beacon can check
-			for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
-
-				Numerical n = evalRPN_numerical( setExpressions[i], param2value, _globalVars, localVariables );
-				if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-				value.push_back(n.getInt());
-			}
-
-			std::vector< std::vector< int > >::iterator pos = std::find(_arity2entries[setExpressions.size()].begin(), _arity2entries[setExpressions.size()].end(), value );
-
-			if ( pos != _arity2entries[setExpressions.size()].end() ){
-				out.push_back(value);
+				for (auto t = temp.begin(); t < temp.end(); t++) out.push_back({*t}); //TODO: this is a bodge in lieu of making this a template
 				return out;
 			}
-			else return out;
-		}
+			else{
 
-		void printContents( void ){ //for testing
-
-			std::cout << ">>>>>>>>>>>>DATABASE CONTENTS: ";
-
-			for ( auto dbValues = _arity2entries.begin(); dbValues != _arity2entries.end(); dbValues++ ){ //go through arities	
-
-				for ( auto entry = (dbValues -> second).begin(); entry < (dbValues -> second).end(); entry++ ){
-
-					for ( unsigned int i = 0; i < (*entry).size(); i++ ) std::cout << (*entry)[i] << " ";
-
+				for (size_t i = 0; i < lb.size(); i++){
+					_arity2Tree[lb[0].size()].search_boundsReturnAll(lb[i], ub[i], _arity2Tree[lb[0].size()].getRoot(), out);
 				}
-				std::cout << std::endl;
+				return out;
 			}
-			std::cout << std::endl;
+		}
+		std::vector< std::vector< int > > findAll_trivial( std::vector< int > &query ){
+
+			//std::cout << "in findAll_trivial" << std::endl;
+			std::vector< std::vector< int > > out;
+
+			if (query.size() == 1){
+				if (_UnaryTree.search(query[0], _UnaryTree.getRoot())){
+					out.push_back({query[0]});
+					return out;
+				}
+				else{
+					return out;
+				}
+			}
+			else{
+
+				if (_arity2Tree[query.size()].search(query, _arity2Tree[query.size()].getRoot())){
+					out.push_back(query);
+					return out;
+				}
+				else{
+					return out;
+				}
+			}
 		}
 };
 
@@ -210,6 +153,8 @@ class BeaconChannel{
 		void cleanSPFromChannel( SystemProcess *, int &, double & );
 		std::shared_ptr<Candidate> pickCandidate(double &, double, double);
 		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, double & );
+		bool matchClone( SystemProcess *, SystemProcess *);
+		void cleanCloneFromChannel( SystemProcess * );
 };
 
 

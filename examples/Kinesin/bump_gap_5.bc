@@ -1,3 +1,5 @@
+//Kinsin interference model from Boemo, Cardelli, and Nieduszynski (2020)
+
 r = 1; //define the rate for walking
 rs = 3.5; //handshake send rate
 L = 100; //microtubule length

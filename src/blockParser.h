@@ -229,13 +229,20 @@ class ParameterValues{
 			}
 		}
 	}
+	unsigned int getSize(void) const{
+		return values.size();
+	}
+	friend bool operator== (const ParameterValues &pv1, const ParameterValues &pv2);
+	friend bool operator!= (const ParameterValues &pv1, const ParameterValues &pv2);
 };
+
 
 class SystemProcess{
 
 	public:
 		Tree<Block> parseTree;
 		ParameterValues parameterValues;
+		size_t clones = 1;
 		std::map< std::string, Numerical > localVariables; //system line variable substitutions and bound variables
 		SystemProcess(){}
 		SystemProcess( const SystemProcess &sp ){
@@ -243,7 +250,10 @@ class SystemProcess{
 			parseTree = sp.parseTree;
 			parameterValues = sp.parameterValues;
 			localVariables = sp.localVariables;
+			clones = sp.clones;
 		}
+		//friend bool operator== (const SystemProcess &sp1, const SystemProcess &sp2);
+		//friend bool operator!= (const SystemProcess &sp1, const SystemProcess &sp2);
 };
 
 
@@ -254,9 +264,12 @@ class Candidate{
 		ParameterValues parameterValues;
 		std::map< std::string, Numerical > localVariables;
 		SystemProcess *processInSystem;
-		double rate;
-		std::vector< Numerical > rangeEvaluation;
+		double rate = 0.0;
+		std::vector< int > sendReceiveParameters;
+		std::vector< std::vector< int > > receiveBounds_lb;
+		std::vector< std::vector< int > > receiveBounds_ub;
 		std::list< SystemProcess > parallelProcesses;
+		std::vector< std::string > beaconChannelName;
 		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
 			actionCandidate = b;
@@ -267,7 +280,7 @@ class Candidate{
 		}
 		std::vector< std::vector< Token * > > getChannelName(void){
 	
-			assert( actionCandidate -> identify() == "MessageSend" or actionCandidate -> identify() == "MessageReceive" );
+			assert( actionCandidate -> identify() == "MessageSend" || actionCandidate -> identify() == "MessageReceive" );
 			std::vector< std::vector< Token * > > channelName;
 			if ( actionCandidate -> identify() == "MessageSend" ){
 

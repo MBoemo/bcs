@@ -1,4 +1,4 @@
-//S. cerevisiae chromosome II replication model from Boemo, Cardelli, and Nieduszynski (2019)
+//S. cerevisiae chromosome II replication model from Boemo, Cardelli, and Nieduszynski (2020)
 
 L = 813; //length of S. cerevisiae chrII in kilobases
 fast = 100000; //fast rate

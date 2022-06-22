@@ -7,8 +7,8 @@
 // -the ability of parameters to function correctly as channel names
 
 //definitions
-proc1[ i, j ] = {i,2*j![i,j],3}.{i,j![i+1,(j+6)/3-2],3}.{sentChannelBeacon,2};
-proc2[ i, j ] = {i,j?[i+1,j](x,y),0.1}.{shouldReceive,1};
+proc1[ i, j ] = {i,2*j![i,j],3}.{i,j![i+1,(j*6)/3-2],3}.{sentChannelBeacon,2};
+proc2[ i, j ] = {i,j?[i+1,j](x,y),0.1}.{received,1};
 
 //system line
 proc1[1,2] || proc2[1,2];

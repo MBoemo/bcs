@@ -127,7 +127,8 @@ FiniteStateAutomaton BeaconCheckTestMachine,
 		     MessagePrimitiveTestMachine,
 		     ParameterTestMachine,
 		     SetOperatorTestMachine,
-		     SemicolonTestMachine;
+		     SemicolonTestMachine,
+			 WildcardTestMachine;
 
 /*useful sets for lexicographical analysis */
 std::set< char > setAlpha = {'A','B','C','D','E','F','G','H','I','J','K','L',
@@ -159,6 +160,7 @@ std::vector< Token * > scanLine( std::string &line, unsigned int lineNumber, uns
 											std::make_pair( AssignmentTestMachine, "Assignment" ),
 											std::make_pair( ParenthesesTestMachine, "Parentheses" ),
 											std::make_pair( CommaTestMachine, "Comma" ),
+											std::make_pair( WildcardTestMachine, "Wildcard" ),
 											std::make_pair( MessagePrimitiveTestMachine, "MessagePrimitive" ),
 											std::make_pair( SemicolonTestMachine, "Semicolon" ) };
 
@@ -237,7 +239,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	ParameterTestMachine.add_edge( "q1", setNumeric, "q1" );
 	ParameterTestMachine.add_edge( "q1", {'.'}, "q2" );
 	ParameterTestMachine.add_edge( "q2", {'.'}, "q1" );
-	ParameterTestMachine.add_edge( "q1", {'\\', '+', '*', '-', '(', ')', ' ','_','|',','}, "q1" );
+	ParameterTestMachine.add_edge( "q1", {'\\', '+', '*', '-', '(', ')', ' ','_','|',',',':'}, "q1" );
 	ParameterTestMachine.add_edge( "q1", {']'}, "endState" );
 
 	/*accepts operators (+,-,||,.,") */
@@ -264,7 +266,11 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 	CommaTestMachine.designate_endState( "endState" );
 	CommaTestMachine.add_edge( CommaTestMachine.startState, {','}, "endState" );
 
-	/*accepts a comma */
+	/*accepts a wildcard */
+	WildcardTestMachine.designate_endState( "endState" );
+	WildcardTestMachine.add_edge( CommaTestMachine.startState, {':'}, "endState" );
+
+	/*accepts a semicolon */
 	SemicolonTestMachine.designate_endState( "endState" );
 	SemicolonTestMachine.add_edge( SemicolonTestMachine.startState, {';'}, "endState" );
 
@@ -397,7 +403,7 @@ std::vector< std::vector< Token * > > scanSource( std::string &sourceFilename ){
 
 	MessageReceiveTestMachine.add_edge( "q2", {'?'}, "q3" );
 	MessageReceiveTestMachine.add_edge( "q3", {'['}, "q4" );
-	MessageReceiveTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','*','^','(',')','.','\\'}, "q4" );
+	MessageReceiveTestMachine.add_edge( "q4", {'_',' ',',','+','-','/','*','^','(',')','.','\\',':'}, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", setAlpha, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", setNumeric, "q4" );
 	MessageReceiveTestMachine.add_edge( "q4", {']'}, "q5" );

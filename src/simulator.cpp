@@ -18,6 +18,7 @@
 #include "error_handling.h"
 #include "simulator.h"
 #include "evaluate_trees.h"
+#include "common.h"
 
 System::System( std::list< SystemProcess > &s, std::map< std::string, ProcessDefinition > &processDefs, int mT, double mD, GlobalVariables &globalVars ){
 
@@ -45,7 +46,7 @@ System::System( std::list< SystemProcess > &s, std::map< std::string, ProcessDef
 	}
 	_currentProcesses.insert( _currentProcesses.end(), newProcesses.begin(), newProcesses.end() );
 
-	//sum the transition rates for non-handshake candidates while buildling a list of handshake candidates
+	//sum the transition rates for non-handshake candidates while building a list of handshake candidates
 	std::list< SystemProcess > parallelProcesses;
 	for ( auto s = _currentProcesses.begin(); s != _currentProcesses.end(); s++ ){
 
@@ -183,10 +184,10 @@ std::vector< std::string > System::substituteChannelName( std::vector< std::vect
 
 
 void System::sumTransitionRates( SystemProcess *sp,
-			 Tree<Block> &bt,
-			 Block *current,
-			 std::list< SystemProcess > parallelProcesses,
-			 ParameterValues &currentParameters ){
+			                     Tree<Block> &bt,
+			                     Block *current,
+			                     std::list< SystemProcess > parallelProcesses,
+			                     ParameterValues &currentParameters){
 
 	if ( current -> identify() == "Action" ){
 
@@ -195,8 +196,8 @@ void System::sumTransitionRates( SystemProcess *sp,
 		std::shared_ptr<Candidate> cand( new Candidate( current, currentParameters, sp -> localVariables, sp, parallelProcesses ) );
 		cand -> rate = rate.doubleCast();
 		_nonMsgCandidates[sp].push_back( cand );
-		_candidatesLeft++;
-		_rateSum += rate.doubleCast();
+		_candidatesLeft += sp -> clones;
+		_rateSum += rate.doubleCast() * (sp -> clones);
 	}
 	else if ( current -> identify() == "MessageSend" ){
 
@@ -217,7 +218,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 			for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
 				Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
-				(cand -> rangeEvaluation).push_back(paramEval);
+				(cand -> sendReceiveParameters).push_back(paramEval.getInt());
 			}
 
 			if ( _handshakes_Name2Channel.find( channelName ) != _handshakes_Name2Channel.end() ){
@@ -353,10 +354,13 @@ SystemProcess * System::updateSpForTransition( std::shared_ptr<Candidate> chosen
 	Block *actionDone = chosen -> actionCandidate;
 	Tree<Block> treeForAction = _name2ProcessDef[ actionDone -> getOwningProcess() ].parseTree;
 
-	if ( treeForAction.isLeaf( actionDone ) ) return NULL;
+	if ( treeForAction.isLeaf( actionDone ) ){
+		return NULL;
+	}
 	else {
 
 		SystemProcess *newSp = new SystemProcess( *SPtoModify );
+		newSp -> clones = 1;
 		newSp -> parameterValues = chosen -> parameterValues; //inherit the parameter variables from the candidate
 		std::vector< Block * > children = treeForAction.getChildren( actionDone );
 		assert( children.size() == 1 );
@@ -386,6 +390,11 @@ void System::splitOnParallel(SystemProcess *sp, Block *currentNode, std::list< S
 		SystemProcess *newSp = new SystemProcess( *sp );
 		newSp -> parseTree = (sp -> parseTree).getSubtree( currentNode );
 		toAdd.push_back( newSp );
+
+#if DEBUG
+std::cout << "   Splitting on parallel, removed " << sp << " and added " << newSp << std::endl;
+#endif
+
 		return;
 	}
 }
@@ -405,7 +414,7 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 	}
 
 	//erase from candidates
-	if ( inNonMsgCandidates ) _nonMsgCandidates.erase( _nonMsgCandidates.find( sp ) );
+	if ( inNonMsgCandidates and sp -> clones == 1 ) _nonMsgCandidates.erase( sp );
 
 	//erase any beacon candidate that pertains to sp
 	for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
@@ -423,21 +432,131 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 		_candidatesLeft -= handshakesRemoved;
 	}
 
-	//reshuffle potential vs active beacon receives, but only do this if database was updated
+	//reshuffle potential vs active beacon receives, but only do this if database was updated, and only do it on the channel that was updated
 	if (databaseUpdated){
 
-		for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
+		_beacons_Name2Channel[candToRemove -> beaconChannelName] -> updateBeaconCandidates(_candidatesLeft,_rateSum);
+	}
 
-			(be -> second) -> updateBeaconCandidates(_candidatesLeft,_rateSum);
+#if DEBUG
+std::cout << "   Removing chosen from system " << sp << std::endl;
+std::cout << "   It has clones: " << sp -> clones << std::endl;
+#endif
+
+	if (sp -> clones == 1){
+
+#if DEBUG
+std::cout << "   Deleting system process " << sp << std::endl;
+std::cout << "   It has clones: " << sp -> clones << std::endl;
+#endif
+
+		//remove the system process from the system
+		_currentProcesses.erase( std::find(_currentProcesses.begin(), _currentProcesses.end(), sp ) );
+		delete sp;
+	}
+	else{
+
+		sp -> clones -= 1;
+#if DEBUG
+std::cout << "   Reducing system process clones for " << sp << std::endl;
+std::cout << "   It now has clones: " << sp -> clones << std::endl;
+#endif
+	}
+}
+
+
+bool System::condenseSystem(SystemProcess *sp){
+
+	//get all the system processes that match on parse trees, parameter values, and local variables
+	std::vector<SystemProcess *> matchingProcesses;
+
+	std::list<SystemProcess *>::iterator pos = std::find_if(_currentProcesses.begin(),_currentProcesses.end(),findSp(sp));
+	while (pos != _currentProcesses.end()){
+
+		if (*pos != sp) matchingProcesses.push_back(*pos);
+		pos++;
+		pos = std::find_if(pos,_currentProcesses.end(),findSp(sp));
+	}
+
+	//Non-messaging actions - check if candidates all have the same parallel processes by matching them up on the block pointers
+	std::vector< std::shared_ptr<Candidate> > sp_candidates = _nonMsgCandidates[sp];
+	std::vector<SystemProcess *> matchOnNonMsg;
+	for (auto mp = matchingProcesses.begin(); mp < matchingProcesses.end();){
+
+		std::vector< std::shared_ptr<Candidate> > mp_candidates = _nonMsgCandidates[*mp];
+
+		//because the sp's are the same, the parameter values, local variables already match, and block tree already match
+		//just check the parallel process so that they have the same history
+		//e.g., for process F, it might have different parallel processes if P starts F versus if F starts by itself
+		bool matchNonMsg = std::is_permutation(sp_candidates.begin(), sp_candidates.end(), mp_candidates.begin(), compareCandidates);
+		if (not matchNonMsg) mp = matchingProcesses.erase(mp);
+		else mp++;
+	}
+
+	//handshake actions - check if candidates all have the same parallel processes by matching them up on the block pointers
+	if (matchingProcesses.size() > 0){
+		for (auto mp = matchingProcesses.begin(); mp < matchingProcesses.end();){
+
+			bool matchesOnHandshakes = true;
+			for ( auto hs = _handshakes_Name2Channel.begin(); hs != _handshakes_Name2Channel.end(); hs++ ){
+
+				bool matchesThisChannel = (hs -> second) -> matchClone( sp, *mp);
+				if (not matchesThisChannel) matchesOnHandshakes = false;
+				break;
+			}
+			if (not matchesOnHandshakes) mp = matchingProcesses.erase(mp);
+			else mp++;
 		}
 	}
 
-	//remove the system process from the system
-	_currentProcesses.erase( std::find(_currentProcesses.begin(), _currentProcesses.end(), sp ) ); 
+	//beacon actions - check if candidates all have the same parallel processes by matching them up on the block pointers
+	if (matchingProcesses.size() > 0){
+		for (auto mp = matchingProcesses.begin(); mp < matchingProcesses.end();){
+			bool matchesOnBeacons = true;
+			for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
+
+				bool matchesThisChannel = (be -> second) -> matchClone( sp, *mp);
+				if (not matchesThisChannel) matchesOnBeacons = false;
+				break;
+			}
+			if (not matchesOnBeacons) mp = matchingProcesses.erase(mp);
+			else mp++;
+		}
+	}
+
+	assert(matchingProcesses.size() == 0 || matchingProcesses.size() == 1);
+
+	//found a match so clean up
+	if (matchingProcesses.size() == 1){
+
+		SystemProcess *mp = matchingProcesses[0];
+		mp -> clones += 1;
+
+		//delete from non messaging actions
+		if (_nonMsgCandidates.count(sp) > 0) _nonMsgCandidates.erase( sp );
+
+		//delete from handshakes
+		for ( auto hs = _handshakes_Name2Channel.begin(); hs != _handshakes_Name2Channel.end(); hs++ ){
+
+			(hs -> second) -> cleanCloneFromChannel(sp);
+		}
+
+		//delete from handshakes
+		for ( auto be = _beacons_Name2Channel.begin(); be != _beacons_Name2Channel.end(); be++ ){
+
+			(be -> second) -> cleanCloneFromChannel(sp);
+		}
+
 #if DEBUG
-std::cout << "   Removing chosen from system: deleting system process pointer " << sp << std::endl;
+std::cout << "   Condensed system" << std::endl;
+std::cout << "   Match for " << sp << std::endl;
+std::cout << "   found at existing " << mp << std::endl;
+std::cout << "   Current clones of match " << mp -> clones << std::endl;
 #endif
-	delete sp;
+
+		return true;
+	}
+	else return false;
 }
 
 
@@ -453,14 +572,14 @@ void System::simulate(void){
 		_totalTime += exponentialDraw;
 
 #if DEBUG
-std::cout << "-----------------" << std::endl;
+std::cout << "=====================================================" << std::endl;
 std::cout << "Candidates left: " << _candidatesLeft << std::endl;
 std::cout << "Transitions taken: " << _transitionsTaken << std::endl;
 std::cout << "Rate sum: " << _rateSum << std::endl;
 std::cout << "Total time elapsed: " << _totalTime << std::endl;
 #endif
 
-		/*monte carlo step to decide next transition */
+		/*Monte Carlo step to decide next transition */
 		std::uniform_real_distribution< double > uniDist(0.0, 1.0);
 		double uniformDraw = uniDist(rnd_gen);
 
@@ -472,10 +591,14 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 		/*non-messaging choice */
 		for ( auto s = _nonMsgCandidates.begin(); s != _nonMsgCandidates.end(); s++ ){
 
-			for ( auto tc = (s -> second).begin(); tc < (s -> second).end(); tc++ ){
+			std::vector< std::shared_ptr<Candidate> > candidates = s -> second;
+			SystemProcess *sp = s -> first;
+			size_t multiplier = sp -> clones;
+
+			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
 				double lower = runningTotal / _rateSum;
-				double upper = (runningTotal + ( (*tc) -> rate)) / _rateSum;
+				double upper = (runningTotal + multiplier * ( (*tc) -> rate)) / _rateSum;
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
@@ -497,7 +620,7 @@ printTransition(_totalTime, *tc);
 					found = true;
 					goto foundCand;
 				}
-				else runningTotal += (*tc) -> rate;
+				else runningTotal += (*tc) -> rate * multiplier;
 			}
 		}
 
@@ -527,7 +650,9 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
 						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
 						
-							newSp -> localVariables[ bindingVars[i] ] = (beaconCand -> rangeEvaluation)[i];
+							Numerical n;
+							n.setInt((beaconCand -> sendReceiveParameters)[i]);
+							newSp -> localVariables[ bindingVars[i] ] = n;
 						}
 					}
 				}
@@ -610,7 +735,7 @@ printTransition(_totalTime, hsCand -> hsReceiveCand);
 		_transitionsTaken++;
 
 #if DEBUG
-std::cout << "   Reformatting system... ";
+std::cout << "   Reformatting system... " << std::endl;
 #endif
 
 		//re-format the system
@@ -630,10 +755,10 @@ std::cout << "   Reformatting system... ";
 
 #if DEBUG
 std::cout << "Done." << std::endl;
-std::cout << "   Re-summing transitions... ";
+std::cout << "   Re-summing transitions... " << std::endl;
 #endif
 
-		//sum the transition rates for non-handshake candidates while buildling a list of candshake candidates
+		//sum the transition rates for non-handshake candidates while building a list of handshake candidates
 		std::list< SystemProcess > parallelProcesses;
 		for ( auto s = toAdd.begin(); s != toAdd.end(); s++ ){
 
@@ -642,7 +767,7 @@ std::cout << "   Re-summing transitions... ";
 
 #if DEBUG
 std::cout << "Done." << std::endl;
-std::cout << "   Re-summing handshakes... ";
+std::cout << "   Re-summing handshakes... " << std::endl;
 #endif
 
 		//sum handshake transitions
@@ -654,10 +779,29 @@ std::cout << "   Re-summing handshakes... ";
 			_candidatesLeft += newHandshakesAdded;
 			_rateSum += rateSumIncrease;
 		}
-		_currentProcesses.insert( _currentProcesses.end(), toAdd.begin(), toAdd.end() );
+
 #if DEBUG
 std::cout << "Done." << std::endl;
+std::cout << "   Condensing system processes... " << std::endl;
 #endif
+
+		for ( auto s = toAdd.begin(); s != toAdd.end(); ){
+
+			bool condensed = condenseSystem(*s);
+			if (condensed){
+				delete *s;
+				s = toAdd.erase(s);
+			}
+			else s++;
+		}
+
+#if DEBUG
+std::cout << "Done." << std::endl;
+std::cout << "Total processes added: " << toAdd.size() << std::endl;
+for (auto a = toAdd.begin(); a != toAdd.end(); a++) std::cout << *a << std::endl;
+#endif
+
+		_currentProcesses.insert( _currentProcesses.end(), toAdd.begin(), toAdd.end() );
 	}
 }
 

@@ -7,7 +7,7 @@
 //definitions
 proc1[ i, j ] = {i+1,j-1![i+1,j*6/3],1};
 proc2[ i, j ] = {i*2,j/2?[i+3,j-4](x,y),1};
-proc3[ i, j ] = {~i/2,6*j?[i+2..5,j-1..j*10],1};
+proc3[ i, j ] = {~i/2,6*j?[i-2..5,j-1..j*10],1};
 proc4[ i, j ] = {i*20,j/1#[i-6,j+9],1};
 
 //system line

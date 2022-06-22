@@ -10,6 +10,7 @@
 #define NUMERICAL_H
 
 #include <limits>
+#include <cassert>
 
 class Numerical{
 
@@ -73,6 +74,8 @@ class Numerical{
 			assert(isDouble_b or isInt_b); //is already set
 			return isDouble_b;
 		}
+		friend bool operator== (const Numerical &n1, const Numerical &n2);
+		friend bool operator!= (const Numerical &n1, const Numerical &n2);
 };
 
 #endif

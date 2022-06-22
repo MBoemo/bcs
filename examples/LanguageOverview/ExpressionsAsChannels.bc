@@ -1,4 +1,4 @@
-//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2019)
+//Model used as an example of the Language Overview section of Boemo, Cardelli, and Nieduszynski (2020)
 
 //process definitions
 P[x,y] = {@x+1,y/2![x,y+1], 1};

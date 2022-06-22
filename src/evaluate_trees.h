@@ -87,8 +87,8 @@ bool evalRPN_condition( std::vector< Token * >, ParameterValues &, GlobalVariabl
 std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 bool evalRPN_setTest( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp );
-inline Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
-inline bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
+bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
 bool castToDouble( std::vector<Token * > , GlobalVariables &, ParameterValues & );
 
 #endif

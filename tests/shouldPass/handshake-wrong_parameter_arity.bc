@@ -1,0 +1,16 @@
+//EXPECTED BEHAVIOUR:
+//The handshake on channel msg shouldn't happen because the number of parameters don't match
+//No action should take place
+
+//WHAT IT TESTS:
+// -we correctly handle matches on channels but mismatches on parameter numbers 
+
+//rate definitions
+rateVar = 3.5;
+
+//process definitions
+proc1[ j ] = {@msg?[1..5 U 6..9, 8](x,y), 4}.{longAction, 0.00001};
+proc2[ j ] = [(j == 3) | (j == 1+0)] -> {@msg![5, 8, 2], rateVar}.({shortAction1, 3.6} + {shortAction2, 5});
+
+//system line
+proc1[3] || proc2[3];

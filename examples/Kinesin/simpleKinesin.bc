@@ -1,4 +1,4 @@
-//Simple kinsin stepping model from Boemo, Cardelli, and Nieduszynski (2019)
+//Simple kinsin stepping model from Boemo, Cardelli, and Nieduszynski (2020)
 
 r = 1; //define the rate for walking
 

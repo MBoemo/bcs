@@ -1,4 +1,4 @@
-//Kinsin interference model from Boemo, Cardelli, and Nieduszynski (2019)
+//Kinsin interference model from Boemo, Cardelli, and Nieduszynski (2020)
 
 r = 1; //define the rate for walking
 rr = 2; //handshake receive rate

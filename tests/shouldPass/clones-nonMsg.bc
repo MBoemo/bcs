@@ -1,0 +1,12 @@
+//EXPECTED BEHAVIOUR:
+//run with debugging on simulator.cpp
+//system processes should branch and clone as they go
+
+//WHAT IT TESTS:
+// -clones are detected and grouped correctly with respect to non-messaging actions (and processes starting other processes)
+
+P1[] = {action1, 1}.P2[];
+P2[] = {action2, 1} + {action3, 1};
+
+//system
+3*P1[];
