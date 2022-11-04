@@ -584,7 +584,7 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 		double uniformDraw = uniDist(rnd_gen);
 
 		/*go through all the transition candidates and stop when we find the correct one */
-		int n_of_rates = 0;
+		int firstRate = true;
 		double runningTotal = 0.0;
 		double log_runningTotal;
 		bool found = false;
@@ -624,7 +624,7 @@ printTransition(_totalTime, *tc);
 					found = true;
 					goto foundCand;
 				}
-				else (if n_of_rates == 0){log_runningTotal = log((*tc) -> rate * multiplier)}
+				else (if firstRate == true){log_runningTotal = log((*tc) -> rate * multiplier)}
 				else log_runningTotal += log(1+exp((*tc) -> rate * multiplier - log_runningTotal));
 			}
 		}
