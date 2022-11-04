@@ -1,0 +1,11 @@
+//EXPECTED BEHAVIOUR:
+//proc performs a very fast action and a very slow action in parallel
+
+//WHAT IT TESTS:
+// -numerical stability with extreme rate values
+
+//process definitions
+proc[ ] = {fastAction,100000000} || {slowAction,0.00000001};
+
+//system line
+proc[];
