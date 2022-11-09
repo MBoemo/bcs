@@ -601,7 +601,8 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 				runningTotal = exp(log_runningTotal);
 				double lower = runningTotal / _rateSum;
-				double upper = (runningTotal + multiplier * ( (*tc) -> rate)) / _rateSum;
+				double log_upper_sum = runningTotal + ln(1 + exp(multiplier * ( (*tc) -> rate)));
+				double upper = exp(log_upper_sum) / _rateSum;
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
