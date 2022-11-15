@@ -20,6 +20,125 @@
 #include "evaluate_trees.h"
 #include "common.h"
 
+class NegativeLog : public std::exception {
+	public:
+		virtual const char * what () const throw () {
+			return "Negative value passed to natural log function.";
+		}
+};
+
+//From DNAscent/src/probability.cpp
+bool lnGreaterThan( double ln_x, double ln_y ){
+/*evalutes whether ln_x is greater than ln_y, and returns a boolean */
+
+	if ( std::isnan( ln_x ) || std::isnan( ln_y ) ){
+
+		if ( std::isnan( ln_x ) || std::isnan( ln_y ) == false ){
+			return false;
+		}
+        	else if ( std::isnan( ln_x ) == false || std::isnan( ln_y ) ){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	else{
+		if ( ln_x > ln_y ){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+}
+
+bool lnGreaterThanOrEq( double ln_x, double ln_y ){
+/*evalutes whether ln_x is greater than ln_y, and returns a boolean */
+
+	if ( std::isnan( ln_x ) || std::isnan( ln_y ) ){
+
+		if ( std::isnan( ln_x ) || std::isnan( ln_y ) == false ){
+			return false;
+		}
+        	else if ( std::isnan( ln_x ) == false || std::isnan( ln_y ) ){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	else{
+		if ( ln_x >= ln_y ){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+}
+
+//From DNAscent/src/probability.cpp
+double eexp( double x ){
+/*Map from log space back to linear space. */
+
+	if ( std::isnan( x ) ) {
+		return 0.0;
+	}
+	else {
+		return exp( x );
+	}
+}
+
+//From DNAscent/src/probability.cpp
+double eln( double x ){
+/*Map from linear space to log space. */
+
+	if (x == 0.0){
+		return NAN;
+	}
+	else if (x > 0.0){
+		return log( x );
+	}
+	else{
+		throw NegativeLog();
+	}
+}
+
+double logSumExp(double a, double b){
+// adds a and b in log space
+// note that inputs are logs of original summands
+
+	//set u as the larger of the two arguments
+	double u,v;
+	if (lnGreaterThan(a,b)){
+	
+		u = a;
+		v = b; 
+	}
+	else{
+	
+		u = b;
+		v = a; 	
+	}
+	
+	double sum = u + eln(1 + eexp(v-u));
+	return sum;
+}
+
+double logSumExp_decrement(double u, double v){
+// decrements u by v
+// equivalent to u -= v
+// u must be geq than v
+
+	assert(lnGreaterThanOrEq(u,v));
+	assert(lnGreaterThanOrEq(u,NAN));
+	assert(lnGreaterThanOrEq(v,NAN));
+
+	double sum = u + eln(1 - eexp(v-u));
+	return sum;
+}
+
 System::System( std::list< SystemProcess > &s, std::map< std::string, ProcessDefinition > &processDefs, int mT, double mD, GlobalVariables &globalVars ){
 
 	_name2ProcessDef = processDefs;
@@ -599,10 +718,8 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
-				runningTotal = exp(log_runningTotal);
 				double lower = runningTotal / _rateSum;
-				double log_upper_sum = log_runningTotal + ln(1 + exp(multiplier * ( (*tc) -> rate) - runningTotal));
-				double upper = exp(log_upper_sum) / _rateSum;
+				double upper = (runningTotal + multiplier * ( (*tc) -> rate)) / _rateSum;
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
@@ -624,8 +741,7 @@ printTransition(_totalTime, *tc);
 					found = true;
 					goto foundCand;
 				}
-				else if (firstRate == true){log_runningTotal = log((*tc) -> rate * multiplier);}
-				else log_runningTotal += log(1+exp((*tc) -> rate * multiplier - log_runningTotal));
+				else runningTotal = logSumExp(eln((*tc) -> rate * multiplier), eln(runningTotal));
 			}
 		}
 

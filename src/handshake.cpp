@@ -298,6 +298,7 @@ std::shared_ptr<HandshakeCandidate> HandshakeChannel::pickCandidate(double &runn
 
 		double r = ((cand -> first) -> rate) * multiplier;
 		double lower = runningTotal / rateSum;
+		double log_Totalplusr = 
 		double upper = (runningTotal + r) / rateSum;
 
 		if ( uniformDraw > lower and uniformDraw <= upper ){
