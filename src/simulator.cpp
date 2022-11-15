@@ -316,7 +316,7 @@ void System::sumTransitionRates( SystemProcess *sp,
 		cand -> rate = rate.doubleCast();
 		_nonMsgCandidates[sp].push_back( cand );
 		_candidatesLeft += sp -> clones;
-		_rateSum += rate.doubleCast() * (sp -> clones);
+		_rateSum = logSumExp(_rateSum, eln(rate.doubleCast() * (sp -> clones)));
 	}
 	else if ( current -> identify() == "MessageSend" ){
 
@@ -718,8 +718,8 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
 				double uppersum = logSumExp((runningTotal)+ eln(multiplier * ( (*tc) -> rate)))
-				double lower = eexp(runningTotal) / _rateSum;
-				double upper = eexp(uppersum) / _rateSum;
+				double lower = eexp(runningTotal) / eexp(_rateSum);
+				double upper = eexp(uppersum) / eexp(_rateSum);
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
