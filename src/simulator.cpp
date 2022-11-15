@@ -527,7 +527,7 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 	bool inNonMsgCandidates = false;
 	for ( auto c = _nonMsgCandidates[sp].begin(); c != _nonMsgCandidates[sp].end(); c++ ){
 
-		_rateSum -= (*c) -> rate;
+		_rateSum = logSumExp_decrement(_rateSum, eln((*c) -> rate));
 		_candidatesLeft--;
 		inNonMsgCandidates = true;
 	}
@@ -704,8 +704,7 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 		/*go through all the transition candidates and stop when we find the correct one */
 		bool firstRate = true;
-		double runningTotal = 0.0;
-		double log_runningTotal;
+		double runningTotal = eln(0.0);
 		bool found = false;
 		std::list< SystemProcess * > toAdd;
 
@@ -718,9 +717,9 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
-				double lower = runningTotal / _rateSum;
-				double uppersum = logSumExp(eln(runningTotal)+ eln(multiplier * ( (*tc) -> rate)))
-				double upper = uppersum / _rateSum;
+				double uppersum = logSumExp((runningTotal)+ eln(multiplier * ( (*tc) -> rate)))
+				double lower = eexp(runningTotal) / _rateSum;
+				double upper = eexp(uppersum) / _rateSum;
 
 				if ( uniformDraw > lower and uniformDraw <= upper ){
 #if DEBUG
@@ -742,7 +741,7 @@ printTransition(_totalTime, *tc);
 					found = true;
 					goto foundCand;
 				}
-				else runningTotal = logSumExp(eln((*tc) -> rate * multiplier), eln(runningTotal));
+				else runningTotal = logSumExp(eln((*tc) -> rate * multiplier), runningTotal);
 			}
 		}
 
