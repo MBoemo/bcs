@@ -686,7 +686,7 @@ void System::simulate(void){
 		/*draw time of next transition */
 		std::random_device rd;
 		std::mt19937 rnd_gen( rd() );
-		std::exponential_distribution< double > expDist(_rateSum);
+		std::exponential_distribution< double > expDist(eexp(_rateSum));
 		double exponentialDraw = expDist(rnd_gen);
 		_totalTime += exponentialDraw;
 
@@ -706,6 +706,7 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 		/*go through all the transition candidates and stop when we find the correct one */
 		bool firstRate = true;
 		double runningTotal = eln(0.0);
+		//double runningTotal = 0.0;
 		bool found = false;
 		std::list< SystemProcess * > toAdd;
 
@@ -718,18 +719,32 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
-				double uppersum = logSumExp((runningTotal), eln(multiplier * ( (*tc) -> rate)))
+				
+				double uppersum = logSumExp((runningTotal), eln(multiplier * ( (*tc) -> rate)));
 				double lower = runningTotal - _rateSum;
 				double upper = uppersum - _rateSum;
+				
+				
+				/*
+				double uppersum = runningTotal + multiplier * ( (*tc) -> rate );
+				double lower = runningTotal/_rateSum;
+				double upper = uppersum/_rateSum;
+				*/
+				std::cout << "Rates: " << multiplier <<  " " << (*tc) -> rate << " " << multiplier * ( (*tc) -> rate ) << std::endl;		
+				
+				std::cout << "Draw: " << lower << " " << uniformDraw << " " << upper << std::endl;
+				
+				std::cout << "-----------" << std::endl;
 
-				if ( lnGreaterThanOrEq(uniformDraw, lower) & lnGreaterThan(uppper, uniformDraw)){
+				if ( lnGreaterThanOrEq(uniformDraw, lower) & lnGreaterThan(upper, uniformDraw)){
+				//if ( uniformDraw >= lower and upper > uniformDraw){
 #if DEBUG
 std::cout << ">Candidate picked: non-msg action ";
 Block *b = (*tc) -> actionCandidate;
 Token *t = b -> getToken();
 std::cout << t -> value();
 std::cout << " at rate " << (*tc) -> rate << std::endl;
-#end
+#endif
 					//designate the chosen one
 					getParallelProcesses( *tc, toAdd );
 					SystemProcess *newSp = updateSpForTransition( *tc );
@@ -743,6 +758,7 @@ printTransition(_totalTime, *tc);
 					goto foundCand;
 				}
 				else runningTotal = logSumExp(eln((*tc) -> rate * multiplier), runningTotal);
+				//else runningTotal = uppersum;
 			}
 		}
 
