@@ -701,6 +701,7 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 		/*Monte Carlo step to decide next transition */
 		std::uniform_real_distribution< double > uniDist(0.0, 1.0);
 		double uniformDraw = uniDist(rnd_gen);
+		uniformDraw = eln(uniformDraw);
 
 		/*go through all the transition candidates and stop when we find the correct one */
 		bool firstRate = true;
@@ -718,10 +719,10 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
 				double uppersum = logSumExp((runningTotal), eln(multiplier * ( (*tc) -> rate)))
-				double lower = eexp(runningTotal) / eexp(_rateSum);
-				double upper = eexp(uppersum) / eexp(_rateSum);
+				double lower = runningTotal - _rateSum;
+				double upper = uppersum - _rateSum;
 
-				if ( uniformDraw > lower and uniformDraw <= upper ){
+				if ( lnGreaterThanOrEq(uniformDraw, lower) & lnGreaterThan(uppper, uniformDraw)){
 #if DEBUG
 std::cout << ">Candidate picked: non-msg action ";
 Block *b = (*tc) -> actionCandidate;
