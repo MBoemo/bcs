@@ -222,7 +222,7 @@ std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp
 //return the number of handshake candidates we removed and the amount that this should decrease the total system rate
 
 	int removed = 0;
-	double rateSum = 0.0;
+	double rateSum = eln(0.0);
 
 	//for each candidate the system process used
 	if ( _possibleHandshakes_sp2Candidates.count(sp) > 0 ){
