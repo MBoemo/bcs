@@ -717,7 +717,7 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
-				double uppersum = logSumExp((runningTotal)+ eln(multiplier * ( (*tc) -> rate)))
+				double uppersum = logSumExp((runningTotal), eln(multiplier * ( (*tc) -> rate)))
 				double lower = eexp(runningTotal) / eexp(_rateSum);
 				double upper = eexp(uppersum) / eexp(_rateSum);
 
@@ -728,7 +728,7 @@ Block *b = (*tc) -> actionCandidate;
 Token *t = b -> getToken();
 std::cout << t -> value();
 std::cout << " at rate " << (*tc) -> rate << std::endl;
-#endif
+#end
 					//designate the chosen one
 					getParallelProcesses( *tc, toAdd );
 					SystemProcess *newSp = updateSpForTransition( *tc );
