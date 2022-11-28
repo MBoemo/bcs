@@ -58,7 +58,7 @@ BeaconChannel::BeaconChannel( std::vector< std::string > name, GlobalVariables &
 std::vector< std::string > BeaconChannel::getChannelName(void){ return _channelName;}
 
 
-void BeaconChannel::addCandidate( Block *b, SystemProcess *sp, std::list< SystemProcess > parallelProcesses, ParameterValues &currentParameters, int &candidatesLeft, double &rateSum ){
+void BeaconChannel::addCandidate( Block *b, SystemProcess *sp, std::list< SystemProcess > parallelProcesses, ParameterValues &currentParameters, int &candidatesLeft, unsigned_numerical &rateSum ){
 //returns a bool of whether the candidate was added (if false, it has been added to potential receives)
 
 #if DEBUG
@@ -74,9 +74,11 @@ std::cout << std::endl;
 			//build the candidate
 			std::shared_ptr<Candidate> cand( new Candidate( mrb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 			cand -> beaconChannelName = _channelName;
-			Numerical rate = evalRPN_numerical( b -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-			if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
-			cand -> rate = rate.doubleCast();
+			signed_numerical rate = evalRPN_numerical( b -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+			if ( rate.return_sign() <= 0 ) throw BadRate( b -> getToken() );
+			unsigned_numerical unsigned_rate;
+			unsigned_rate = rate;
+			cand -> rate = unsigned_rate;
 
 			std::vector< std::vector< Token * > > setExpressions = mrb -> getSetExpression();
 			bool canReceive;
@@ -107,9 +109,10 @@ std::cout << std::endl;
 				std::vector< int > valueToFind;
 				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-					Numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
-					if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-					valueToFind.push_back(n.getInt());
+					signed_numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					if (n.return_isFloat()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+					int val = (int) n.return_floatingPointValue();
+					valueToFind.push_back(val);
 				}
 				cand -> sendReceiveParameters = valueToFind;
 
@@ -120,7 +123,9 @@ std::cout << std::endl;
 
 				_activeBeaconReceiveCands[sp].push_back( cand );
 				candidatesLeft += sp -> clones;
-				rateSum += rate.doubleCast() * (sp -> clones);
+				unsigned_numerical num_clones;
+				num_clones = sp -> clones;
+				rateSum += unsigned_rate * num_clones;
 			}
 			else _potentialBeaconReceiveCands[sp].push_back( cand );
 
@@ -165,15 +170,16 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 				//get the one value that the beacon can check
 				for ( unsigned int i = 0; i < setExpressions.size(); i++ ){
 
-					Numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
-					if (not n.isInt()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
-					valueToFind.push_back(n.getInt());
+					signed_numerical n = evalRPN_numerical( setExpressions[i], currentParameters, _globalVars, sp -> localVariables );
+					if (n.return_isFloat()) throw SyntaxError(setExpressions[i][0], "Set expressions must evaluate to ints, not floats.");
+					int query = (int) n.return_floatingPointValue();
+					valueToFind.push_back(query);
 				}
 
 				matchingParameters = _database.findAll_trivial( valueToFind );
 			}
 
-			Numerical rate;
+			signed_numerical rate;
 
 			//if we don't have binding variables where the rate can depend on what we receive, then we only have to call evalRPN_numerical once
 			if ( not mrb -> bindsVariable() ){
@@ -185,31 +191,33 @@ std::cout << "   >>Can receive? " << canReceive << std::endl;
 			for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){
 
 				//if we have binding variables, we're allowed to use it in the rate evaluation
-				std::map< std::string, Numerical > augmentedLocalVars = sp -> localVariables;
-				std::vector<Numerical> newRangeEval;
+				std::map< std::string, signed_numerical > augmentedLocalVars = sp -> localVariables;
 				if ( mrb -> bindsVariable() ){
 
 					std::vector< std::string > bindingVarNames = mrb -> getBindingVariable();
 					for ( unsigned int i = 0; i < bindingVarNames.size(); i++ ){
 
-						Numerical n;
-						n.setInt((*mp)[i]);
-						newRangeEval.push_back(n);
+						signed_numerical n;
+						n = (*mp)[i];
 						augmentedLocalVars[ bindingVarNames[i] ] = n;
 					}
 					rate = evalRPN_numerical( mrb -> getRate(), currentParameters, _globalVars, augmentedLocalVars );
 				}
 
-				if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
+				if ( rate.return_sign() <= 0 ) throw BadRate( b -> getToken() );
+				unsigned_numerical unsigned_rate;
+				unsigned_rate = rate;
 				std::shared_ptr<Candidate> cand( new Candidate(mrb, currentParameters, augmentedLocalVars, sp, parallelProcesses) );
 				cand -> receiveBounds_lb = lb;
 				cand -> receiveBounds_ub = ub;
 				cand -> beaconChannelName = _channelName;
-				cand -> rate = rate.doubleCast();
+				cand -> rate = unsigned_rate;
 				cand -> sendReceiveParameters = *mp;
 				_activeBeaconReceiveCands[sp].push_back( cand );
 				candidatesLeft += sp -> clones;
-				rateSum += rate.doubleCast() * (sp -> clones);
+				unsigned_numerical n_clones;
+				n_clones = sp -> clones;
+				rateSum += unsigned_rate * n_clones;
 			}
 
 			//if the mrb can't receive and isn't already in the potential receives, add it to the potential receives
@@ -246,31 +254,35 @@ std::cout << t -> value() << std::endl;
 
 		assert( b -> identify() == "MessageSend" );
 		MessageSendBlock *msb = dynamic_cast< MessageSendBlock * >( b );
-		Numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-		if ( rate.doubleCast() <= 0 ) throw BadRate( b -> getToken() );
+		signed_numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+		if ( rate.return_sign() <= 0 ) throw BadRate( b -> getToken() );
 
 		std::shared_ptr< Candidate > cand( new Candidate( msb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 		cand -> beaconChannelName = _channelName;
-		cand -> rate = rate.doubleCast();
+		unsigned_numerical unsigned_rate;
+		unsigned_rate = rate;
+		cand -> rate = unsigned_rate;
 
 		//evaluate the expression
 		std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
 		std::vector<int> param;
 		for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
-			Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
-			param.push_back(paramEval.getInt());
+			signed_numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
+			param.push_back( (int) paramEval.return_floatingPointValue());
 		}
 		cand -> sendReceiveParameters = param;
 
 		_sendCands[sp].push_back( cand );
 		candidatesLeft += sp -> clones;
-		rateSum += rate.doubleCast() * (sp -> clones);
+		unsigned_numerical n_clones;
+		n_clones = sp -> clones;
+		rateSum += unsigned_rate * n_clones;
 	}
 }
 
 
-void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, double &rateSum ){
+void BeaconChannel::cleanSPFromChannel( SystemProcess *sp, int &candidatesLeft, unsigned_numerical &rateSum ){
 
 #if DEBUG
 std::cout << "   >>Cleaning " << sp << " from channel - before clean" << std::endl;
@@ -317,7 +329,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 }
 
 
-void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, double &rateSum){
+void BeaconChannel::updateBeaconCandidates(int &candidatesLeft, unsigned_numerical &rateSum){
 
 #if DEBUG
 std::cout << "   >>Updating candidates - moving from active to potential...." << std::endl;
@@ -348,7 +360,9 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 			if ( (not canReceive and not mrb -> isCheck()) or (canReceive and mrb -> isCheck()) ){
 
 				candidatesLeft -= sp -> clones;
-				rateSum -= (*cand) -> rate * (sp -> clones);
+				unsigned_numerical n_clones;
+				n_clones = sp -> clones;
+				rateSum -= (*cand) -> rate * n_clones;
 				_potentialBeaconReceiveCands[candPair -> first].push_back(*cand);
 				cand = (candPair -> second).erase(cand);
 			}
@@ -384,10 +398,13 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 			if (mrb -> isCheck() and not canReceive){
 
 				_activeBeaconReceiveCands[sp].push_back(*cand);
-				Numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, sp -> localVariables );
-				if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
+				signed_numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, sp -> localVariables );
+				if ( rate.return_sign() <= 0 ) throw BadRate( mrb -> getToken() );
+				unsigned_numerical unsigned_rate, n_clones;
 				candidatesLeft += sp -> clones;
-				rateSum += rate.doubleCast() * (sp -> clones);
+				unsigned_rate = rate;
+				n_clones = sp -> clones;
+				rateSum += unsigned_rate * n_clones;
 				cand = (candPair -> second).erase(cand);
 			}
 			else if (not mrb -> isCheck()){
@@ -404,31 +421,33 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 				for ( auto mp = matchingParameters.begin(); mp < matchingParameters.end(); mp++ ){
 
 					//if we have binding variables, we're allowed to use it in the rate evaluation
-					std::map< std::string, Numerical > augmentedLocalVars = sp -> localVariables;
-					std::vector<Numerical> newRangeEval;
+					std::map< std::string, signed_numerical > augmentedLocalVars = sp -> localVariables;
 					if ( mrb -> bindsVariable() ){
 
 						std::vector< std::string > bindingVarNames = mrb -> getBindingVariable();
 						for ( unsigned int i = 0; i < bindingVarNames.size(); i++ ){
 
-							Numerical n;
-							n.setInt((*mp)[i]);
-							newRangeEval.push_back(n);
+							signed_numerical n;
+							n = (*mp)[i];
 							augmentedLocalVars[ bindingVarNames[i] ] = n;
 						}
 					}
 
-					Numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, augmentedLocalVars );
-					if ( rate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
+					signed_numerical rate = evalRPN_numerical( mrb -> getRate(), sp -> parameterValues, _globalVars, augmentedLocalVars );
+					if ( rate.return_sign() <= 0 ) throw BadRate( mrb -> getToken() );
 					std::shared_ptr<Candidate> newCand( new Candidate(mrb, sp -> parameterValues, augmentedLocalVars, sp, (*cand) -> parallelProcesses) );
 					newCand -> receiveBounds_lb = (*cand) -> receiveBounds_lb;
 					newCand -> receiveBounds_ub = (*cand) -> receiveBounds_ub;
 					newCand -> beaconChannelName = _channelName;
-					newCand -> rate = rate.doubleCast();
+					unsigned_numerical unsigned_rate;
+					unsigned_rate = rate;
+					newCand -> rate = unsigned_rate;
 					newCand -> sendReceiveParameters = *mp;
 					_activeBeaconReceiveCands[sp].push_back( newCand );
 					candidatesLeft += sp -> clones;
-					rateSum += rate.doubleCast() * (sp -> clones);
+					unsigned_numerical n_clones;
+					n_clones = sp -> clones;
+					rateSum += unsigned_rate* n_clones;
 				}
 				if (matchingParameters.size() > 0) cand = (candPair -> second).erase(cand);
 				else cand++;
@@ -446,7 +465,7 @@ for (auto a = _sendCands.begin(); a != _sendCands.end(); a++) std::cout << "   >
 }
 
 
-std::shared_ptr<Candidate> BeaconChannel::pickCandidate(double &runningTotal, double uniformDraw, double rateSum){
+std::shared_ptr<Candidate> BeaconChannel::pickCandidate(unsigned_numerical &runningTotal, unsigned_numerical uniformDraw, unsigned_numerical rateSum){
 
 #if DEBUG
 std::cout << "Picking beacon candidate..." << std::endl;
@@ -458,11 +477,11 @@ std::cout << "Picking beacon candidate..." << std::endl;
 
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end(); cand++ ){
 
-			double r = (*cand) -> rate * (sp -> clones);
-			double lower = runningTotal / rateSum;
-			double upper = (runningTotal + r) / rateSum;
+			unsigned_numerical n_clones;
+			n_clones = sp -> clones;
+			runningTotal += (*cand) -> rate * n_clones;
 
-			if ( uniformDraw > lower and uniformDraw <= upper ){
+			if ( runningTotal > uniformDraw*rateSum  ){
 
 #if DEBUG
 std::cout << "Chose beacon receive candidate: " << *cand << std::endl;
@@ -470,7 +489,6 @@ std::cout << "Chose beacon receive candidate: " << *cand << std::endl;
 
 				return *cand;
 			}
-			runningTotal += r;
 		}
 	}
 
@@ -480,11 +498,11 @@ std::cout << "Chose beacon receive candidate: " << *cand << std::endl;
 
 		for ( auto cand = (candPair -> second).begin(); cand != (candPair -> second).end(); cand++ ){
 
-			double r = (*cand) -> rate * (sp -> clones);
-			double lower = runningTotal / rateSum;
-			double upper = (runningTotal + r) / rateSum;
+			unsigned_numerical n_clones;
+			n_clones = sp -> clones;
+			runningTotal += (*cand) -> rate * n_clones;
 
-			if ( uniformDraw > lower and uniformDraw <= upper ){
+			if ( runningTotal > uniformDraw  ){
 
 #if DEBUG
 std::cout << "Chose beacon send candidate: " << *cand << std::endl;
@@ -503,7 +521,6 @@ std::cout << "Chose beacon send candidate: " << *cand << std::endl;
 				}				
 				return *cand;
 			}
-			runningTotal += r;
 		}
 	}
 	return NULL;

@@ -24,7 +24,8 @@ class System{
 	private: 
 		std::list< SystemProcess * > _currentProcesses;
 		GlobalVariables _globalVars;
-		double _rateSum = 0.0, _totalTime = 0.0, _maxDuration;
+		unsigned_numerical _rateSum;
+		double _totalTime = 0.0, _maxDuration;
 		int _transitionsTaken = 0, _maxTransitions, _candidatesLeft = 0;
 
 		std::map< SystemProcess * , std::vector< std::shared_ptr<Candidate> > > _nonMsgCandidates;
@@ -47,7 +48,7 @@ class System{
 		}
 		void writeTransition( double , std::shared_ptr<Candidate>, std::stringstream & );
 		std::string writeChannelName( std::vector< std::vector< Token * > > );
-		std::vector< std::string > substituteChannelName( std::vector< std::vector< Token * > >, ParameterValues &, std::map< std::string, Numerical > & );
+		std::vector< std::string > substituteChannelName( std::vector< std::vector< Token * > >, ParameterValues &, std::map< std::string, signed_numerical > & );
 		void sumTransitionRates( SystemProcess *, Tree<Block> &, Block *, std::list< SystemProcess >, ParameterValues & );
 		void updateSystem( std::shared_ptr<Candidate>, std::list< SystemProcess * > & );
 		void splitOnParallel(SystemProcess &, Block *, std::list< SystemProcess> & );
@@ -56,7 +57,7 @@ class System{
 		void removeChosenFromSystem( std::shared_ptr<Candidate>, bool );
 		void getParallelProcesses( std::shared_ptr<Candidate>, std::list< SystemProcess * > & );
 		SystemProcess * updateSpForTransition( std::shared_ptr<Candidate> );
-		bool variableIsDefined(std::string, ParameterValues &, std::map< std::string, Numerical > &);
+		bool variableIsDefined(std::string, ParameterValues &, std::map< std::string, signed_numerical > &);
 		void printTransition(double, std::shared_ptr<Candidate>);
 		bool condenseSystem(SystemProcess *);
 };

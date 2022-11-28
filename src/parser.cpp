@@ -341,18 +341,12 @@ printTree( treeForLine, treeForLine.getRoot() );
 					/*we need an int literal or double literal on the RHS of the equal sign */
 					if ( RHS.size() != 1 ) throw SyntaxError( *token, "Thrown by parser: Right hand side of variable assignment must be an int literal or double literal." );
 
-					if ( RHS[0] -> identify() == "DoubleLiteral"){
+					if ( RHS[0] -> identify() == "DoubleLiteral" or RHS[0] -> identify() == "IntLiteral"){
 
-						Numerical n;
-						n.setDouble(std::stod(RHS[0] -> value()));
+						signed_numerical n;
+						n = RHS[0] -> value();
 						variableName2Value.updateValue(	LHS[0] -> value(), n );						
 					}
-					else if ( RHS[0] -> identify() == "IntLiteral"){
-
-						Numerical n;
-						n.setInt(std::stoi(RHS[0] -> value()));
-						variableName2Value.updateValue(	LHS[0] -> value(), n );						
-					} 
 					else throw SyntaxError( RHS[0], "Thrown by parser: Right hand side of variable assignment must be an int literal or double literal." );
 
 #if DEBUG_PARSER_VARDEFS

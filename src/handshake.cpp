@@ -41,7 +41,7 @@ std::cout << "sending sp: " << sendCand -> processInSystem << std::endl;
 std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 #endif
 
-	std::map< std::string, Numerical > augmentedLocalVars = receiveCand -> localVariables;
+	std::map< std::string, signed_numerical > augmentedLocalVars = receiveCand -> localVariables;
 
 	//if we have a binding variable, we're allowed to use it in the rate calculation for the handshake receive candidate
 	MessageReceiveBlock *mrb = dynamic_cast< MessageReceiveBlock * >(receiveCand -> actionCandidate);
@@ -50,16 +50,19 @@ std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 		std::vector< std::string > bindingVarNames = mrb -> getBindingVariable();
 		for ( unsigned int i = 0; i < bindingVarNames.size(); i++ ){
 
-			Numerical n;
-			n.setInt(sEval[i]);
+			signed_numerical n;
+			n = sEval[i];
 			augmentedLocalVars[ bindingVarNames[i] ] = n;
 		}
 	}
 
-	Numerical receiveRate = evalRPN_numerical( mrb -> getRate(), receiveCand -> parameterValues, _globalVars, augmentedLocalVars );
-	if ( receiveRate.doubleCast() <= 0 ) throw BadRate( mrb -> getToken() );
+	signed_numerical receiveRateRPNout = evalRPN_numerical( mrb -> getRate(), receiveCand -> parameterValues, _globalVars, augmentedLocalVars );
+	if ( receiveRateRPNout.return_sign() <= 0 ) throw BadRate( mrb -> getToken() );
+	unsigned_numerical receiveRate;
+	receiveRate = receiveRateRPNout;
 
-	double rate = (sendCand -> rate) * receiveRate.doubleCast();
+
+	unsigned_numerical rate = (sendCand -> rate) * receiveRate;
 	std::shared_ptr<HandshakeCandidate> hsCand( new HandshakeCandidate( sendCand, receiveCand, rate, sEval, _channelName ) );
 
 	//associate both the sending and receiving system processes with this handshake candidate, and vice versa
@@ -74,10 +77,10 @@ std::cout << "receiving sp: " << receiveCand -> processInSystem << std::endl;
 }
 
 
-std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
+std::pair<unsigned int, unsigned_numerical> HandshakeChannel::updateHandshakeCandidates(void){
 
-	int candidatesAdded = 0;
-	double rateSum = 0.0;
+	unsigned int candidatesAdded = 0;
+	unsigned_numerical rateSum;
 
 	//match added send to receives that are already there
 	for ( auto addedSend = _sendToAdd.begin(); addedSend != _sendToAdd.end(); addedSend++ ){
@@ -113,9 +116,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 
 					SystemProcess *sp_send = (*addedSend) -> processInSystem;
 					SystemProcess *sp_receive = (*r_cand) -> processInSystem;
-					size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+					unsigned int multiplier = (sp_send -> clones) * (sp_receive -> clones);
 					candidatesAdded += multiplier;
-					rateSum += newHS -> rate * multiplier;
+					unsigned_numerical num_multiplier;
+					num_multiplier = multiplier;
+					rateSum += newHS -> rate * num_multiplier;
 				}
 			}
 		}
@@ -154,9 +159,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 					std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *s_cand, *addedReceive, sEval );
 					SystemProcess *sp_send = (*s_cand) -> processInSystem;
 					SystemProcess *sp_receive = (*addedReceive) -> processInSystem;
-					size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+					unsigned int multiplier = (sp_send -> clones) * (sp_receive -> clones);
 					candidatesAdded += multiplier;
-					rateSum += newHS -> rate * multiplier;
+					unsigned_numerical num_multiplier;
+					num_multiplier = multiplier;
+					rateSum += newHS -> rate * num_multiplier;
 				}
 			}
 		}
@@ -193,9 +200,11 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 				std::shared_ptr<HandshakeCandidate> newHS = buildHandshakeCandidate( *addedSend, *r_cand, sEval );
 				SystemProcess *sp_send = (*addedSend) -> processInSystem;
 				SystemProcess *sp_receive = (*r_cand) -> processInSystem;
-				size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
+				unsigned int multiplier = (sp_send -> clones) * (sp_receive -> clones);
 				candidatesAdded += multiplier;
-				rateSum += newHS -> rate * multiplier;
+				unsigned_numerical num_multiplier;
+				num_multiplier = multiplier;
+				rateSum += newHS -> rate * num_multiplier;
 			}
 		}
 	}
@@ -217,12 +226,12 @@ std::pair<int, double> HandshakeChannel::updateHandshakeCandidates(void){
 }
 
 
-std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp ){
+std::pair< unsigned int, unsigned_numerical > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp ){
 //clean a system process that we're removing from the system from the channel
 //return the number of handshake candidates we removed and the amount that this should decrease the total system rate
 
-	int removed = 0;
-	double rateSum = 0.0;
+	unsigned int removed = 0;
+	unsigned_numerical rateSum;
 
 	//for each candidate the system process used
 	if ( _possibleHandshakes_sp2Candidates.count(sp) > 0 ){
@@ -232,12 +241,14 @@ std::pair< int, double > HandshakeChannel::cleanSPFromChannel( SystemProcess *sp
 			SystemProcess *sp_send = (*c) -> hsSendCand -> processInSystem;
 			SystemProcess *sp_receive = (*c) -> hsReceiveCand -> processInSystem;
 			assert(sp == sp_send or sp == sp_receive);
-			size_t multiplier;
+			unsigned int multiplier;
 			if (sp == sp_send) multiplier = sp_receive -> clones;
 			else multiplier =  sp_send -> clones;
 
 			removed += multiplier;
-			rateSum += (*c) -> rate * multiplier;
+			unsigned_numerical num_multiplier;
+			num_multiplier = multiplier;
+			rateSum += (*c) -> rate * num_multiplier;
 
 			assert(_possibleHandshakes_candidates2Sp.count(*c) > 0);
 
@@ -287,24 +298,24 @@ std::cout << "cleaned " << sp << " and removed " << removed << std::endl;
 }
 
 
-std::shared_ptr<HandshakeCandidate> HandshakeChannel::pickCandidate(double &runningTotal, double uniformDraw, double rateSum){
+std::shared_ptr<HandshakeCandidate> HandshakeChannel::pickCandidate(unsigned_numerical &runningTotal, unsigned_numerical num_uniformDraw, unsigned_numerical rateSum){
 
 	for ( auto cand = _possibleHandshakes_candidates2Sp.begin(); cand != _possibleHandshakes_candidates2Sp.end(); cand++ ){
 
 		//scale by the number of send/receive system process clones
 		SystemProcess *sp_send = ((cand -> first ) -> hsSendCand) -> processInSystem;
 		SystemProcess *sp_receive = ((cand -> first ) -> hsReceiveCand) -> processInSystem;
-		size_t multiplier = (sp_send -> clones) * (sp_receive -> clones);
 
-		double r = ((cand -> first) -> rate) * multiplier;
-		double lower = runningTotal / rateSum;
-		double upper = (runningTotal + r) / rateSum;
+		unsigned int multiplier = (sp_send -> clones) * (sp_receive -> clones);
+		unsigned_numerical n_multiplier;
+		n_multiplier = multiplier;
 
-		if ( uniformDraw > lower and uniformDraw <= upper ){
+		runningTotal += n_multiplier * ((cand -> first) -> rate);
+
+		if ( runningTotal > num_uniformDraw*rateSum  ){
 
 			return cand -> first;
 		}
-		runningTotal += r;
 	}
 	return NULL;
 }

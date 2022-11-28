@@ -179,14 +179,14 @@ class Tree {
 class GlobalVariables{
 
 	public:
-		std::map< std::string, Numerical > values;
+		std::map< std::string, signed_numerical > values;
 	
 	GlobalVariables(){}
 	GlobalVariables( const GlobalVariables &pv ){
 
 		values = pv.values;
 	}
-	void updateValue(std::string pName, Numerical value){
+	void updateValue(std::string pName, signed_numerical value){
 
 		if ( values.count(pName) > 0 ) values.erase(values.find(pName));
 		values[pName] = value;
@@ -202,14 +202,7 @@ class GlobalVariables{
 	void printValues(){
 		for ( auto i = values.begin(); i != values.end(); i++){
 
-			if ((i->second).isDouble()){
-
-				std::cout << i -> first << " " << (i -> second).getDouble() << " Double" << std::endl;
-			}
-			else{
-
-				std::cout << i -> first << " " << (i -> second).getInt() << " Int" << std::endl;
-			}
+			std::cout << i -> first << " " << (i -> second).return_floatingPointValue() << std::endl;
 		}
 	}
 };

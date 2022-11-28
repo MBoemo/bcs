@@ -429,21 +429,15 @@ std::cout << "Whole expression in RPN: ";
 }
 
 
-Numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
+signed_numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
-	Numerical out;
-	if ( t -> identify() == "DoubleLiteral" ){
+	if ( t -> identify() == "DoubleLiteral" or t -> identify() == "IntLiteral"){
 
 		std::string litValue = t -> value();
-		out.setDouble(atof(litValue.c_str()));
-		return out;
-	}
-	else if ( t -> identify() == "IntLiteral" ){
-
-		std::string litValue = t -> value();
-		out.setInt(atoi(litValue.c_str()));
-		return out;
+		signed_numerical n;
+		n = litValue;
+		return n;
 	}
 	else{
 
@@ -465,7 +459,7 @@ Numerical substituteVariable( Token *t, ParameterValues &param2value, GlobalVari
 }
 
 
-bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables ){
+bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables ){
 //takes a variable token and looks for valid substitutions from the process's parameter values, the system's global variables, and local variables within the system process
 
 	assert( t -> identify() == "Variable" );
@@ -485,11 +479,11 @@ bool variableIsDefined( Token *t, ParameterValues &param2value, GlobalVariables 
 }
 
 
-Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+signed_numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables){
 
 	//quick exit for simple cases
 	if (inputRPN.size() == 1){
-		Numerical result = substituteVariable( inputRPN[0], param2value, globalVariables, localVariables );
+		signed_numerical result = substituteVariable( inputRPN[0], param2value, globalVariables, localVariables );
 		return result;
 	}
 
@@ -506,22 +500,23 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
-				Numerical op_n = numptr -> getValue();
-				Numerical result;
+				signed_numerical op_n = numptr -> getValue();
+
+				signed_numerical result;
 				if ( (*t) -> value() == "abs" ){
 
-					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
-					else result.setDouble(std::abs(op_n.getDouble()));
+					op_n.inplace_absVal();
+					result = op_n;
 				}
 				else if ( (*t) -> value() == "sqrt" ){
 
-					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
-					else result.setDouble(sqrt(op_n.getDouble()));
+					if (op_n.return_sign() < 0) throw SyntaxError(*t, "Arguments to square root function must be positive.");
+					result = (double) sqrt(op_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "neg" ){
 
-					if (op_n.isInt()) result.setInt(-op_n.getInt());
-					else result.setDouble(-op_n.getDouble());
+					op_n.inplace_negation();
+					result = op_n;
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
 
@@ -538,50 +533,39 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
+				signed_numerical op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
+				signed_numerical op2_n = numptr -> getValue();
 
-				//upcast
-				bool upcast = false;
-				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
-
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "+" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() + op2_n.getInt() );
+					result = op1_n + op2_n;
 				}
 				else if ( (*t) -> value() == "-" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() - op2_n.getInt() );
+					result = op1_n - op2_n;
 				}
 				else if ( (*t) -> value() == "/" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() / op2_n.getInt() );
+					result = op1_n / op2_n;
 				}
 				else if ( (*t) -> value() == "*" ){
-					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() * op2_n.getInt() );
+
+					result = op1_n * op2_n;
 				}
 				else if ( (*t) -> value() == "^" ){
 
-					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
+					result = (double) pow(op1_n.return_floatingPointValue(), op2_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "min" ){
 
-					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
+					result = std::min(op1_n, op2_n);
 				}
 				else if ( (*t) -> value() == "max" ){
 
-					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+					result = std::max(op1_n, op2_n);
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
 
@@ -598,7 +582,7 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
 			}			
 
-			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			signed_numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
 			evalStack.push( new NumericalOperand(result) );
 		}
 	}
@@ -606,7 +590,8 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 	if ( evalStack.top() -> identify() != "Numerical" ) throw SyntaxError( inputRPN[0], "Expression must evaluate to a numerical value." );
 
 	NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
-	Numerical result = numptr -> getValue();
+	signed_numerical result;
+	result = numptr -> getValue();
 	delete evalStack.top();
 
 #if DEBUG_RPN
@@ -618,7 +603,7 @@ Numerical evalRPN_numerical( std::vector< Token * > inputRPN, ParameterValues &p
 }
 
 
-bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables){
 
 	std::stack<RPNoperand *> evalStack;	
 
@@ -633,22 +618,23 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
-				Numerical op_n = numptr -> getValue();
-				Numerical result;
+				signed_numerical op_n = numptr -> getValue();
+
+				signed_numerical result;
 				if ( (*t) -> value() == "abs" ){
 
-					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
-					else result.setDouble(std::abs(op_n.getDouble()));
+					op_n.inplace_absVal();
+					result = op_n;
 				}
 				else if ( (*t) -> value() == "sqrt" ){
 
-					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
-					else result.setDouble(sqrt(op_n.getDouble()));
+					if (op_n.return_sign() < 0) throw SyntaxError(*t, "Arguments to square root function must be positive.");
+					result = (double) sqrt(op_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "neg" ){
 
-					if (op_n.isInt()) result.setInt(-op_n.getInt());
-					else result.setDouble(-op_n.getDouble());
+					op_n.inplace_negation();
+					result = op_n;
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
 
@@ -665,50 +651,39 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
+				signed_numerical op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
+				signed_numerical op2_n = numptr -> getValue();
 
-				//upcast
-				bool upcast = false;
-				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
-
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "+" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() + op2_n.getInt() );
+					result = op1_n + op2_n;
 				}
 				else if ( (*t) -> value() == "-" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() - op2_n.getInt() );
+					result = op1_n - op2_n;
 				}
 				else if ( (*t) -> value() == "/" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() / op2_n.getInt() );
+					result = op1_n / op2_n;
 				}
 				else if ( (*t) -> value() == "*" ){
-					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() * op2_n.getInt() );
+
+					result = op1_n * op2_n;
 				}
 				else if ( (*t) -> value() == "^" ){
 
-					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
+					result = (double) pow(op1_n.return_floatingPointValue(), op2_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "min" ){
 
-					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
+					result = std::min(op1_n, op2_n);
 				}
 				else if ( (*t) -> value() == "max" ){
 
-					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+					result = std::max(op1_n, op2_n);
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
 
@@ -725,7 +700,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
+				signed_numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
@@ -733,22 +708,22 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 
 				bool result;
 				if ( (*t) -> value() == "==" ){
-					result = op1_n.doubleCast() == op2_n.doubleCast();
+					result = op1_n == op2_n;
 				}
 				else if ( (*t) -> value() == "!=" ){
-					result = op1_n.doubleCast() != op2_n.doubleCast();
+					result = op1_n != op2_n;
 				}
 				else if ( (*t) -> value() == ">" ){
-					result = op1_n.doubleCast() > op2_n.doubleCast();
+					result = op1_n > op2_n;
 				}
 				else if ( (*t) -> value() == "<" ){
-					result = op1_n.doubleCast() < op2_n.doubleCast();
+					result = op1_n < op2_n;
 				}
 				else if ( (*t) -> value() == ">=" ){
-					result = op1_n.doubleCast() >= op2_n.doubleCast();
+					result = op1_n >= op2_n;
 				}
 				else if ( (*t) -> value() == "<=" ){
-					result = op1_n.doubleCast() <= op2_n.doubleCast();
+					result = op1_n <= op2_n;
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for comparison evaluation.");
 
@@ -808,7 +783,7 @@ bool evalRPN_condition( std::vector< Token * > inputRPN, ParameterValues &param2
 				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
 			}			
 
-			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			signed_numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
 			evalStack.push( new NumericalOperand(result) );
 		}
 	}
@@ -891,7 +866,6 @@ for ( auto p = S1.begin(); p < S1.end(); p++ ) std::cout << p -> first << " " <<
 
 	return S1;
 }
-
 
 std::vector< std::pair< int, int > > intersectBounds( std::pair<int, int> B1, std::pair<int, int> B2 ){
 
@@ -993,7 +967,7 @@ std::cout << "Set difference..." << std::endl;
 }
 
 
-std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables){
 
 #if DEBUG_SETS
 std::cout << "Expression is: ";
@@ -1016,24 +990,24 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
-				Numerical op_n = numptr -> getValue();
-				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				signed_numerical op_n = numptr -> getValue();
+				if (op_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "abs" ){
 
-					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
-					else result.setDouble(std::abs(op_n.getDouble()));
+					op_n.inplace_absVal();
+					result = op_n;
 				}
 				else if ( (*t) -> value() == "sqrt" ){
 
-					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
-					else result.setDouble(sqrt(op_n.getDouble()));
+					if (op_n.return_sign() < 0) throw SyntaxError(*t, "Arguments to square root function must be positive.");
+					result = (double) sqrt(op_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "neg" ){
 
-					if (op_n.isInt()) result.setInt(-op_n.getInt());
-					else result.setDouble(-op_n.getDouble());
+					op_n.inplace_negation();
+					result = op_n;
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
 
@@ -1050,51 +1024,41 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
+				signed_numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
 				op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
 				op2_n = numptr -> getValue();
-				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				if (op1_n.return_isFloat() or op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				//upcast
-				bool upcast = false;
-				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
-
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "+" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() + op2_n.getInt() );
+					result = op1_n + op2_n;
 				}
 				else if ( (*t) -> value() == "-" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() - op2_n.getInt() );
+					result = op1_n - op2_n;
 				}
 				else if ( (*t) -> value() == "/" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() / op2_n.getInt() );
+					result = op1_n / op2_n;
 				}
 				else if ( (*t) -> value() == "*" ){
-					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() * op2_n.getInt() );
+
+					result = op1_n * op2_n;
 				}
 				else if ( (*t) -> value() == "^" ){
 
-					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
+					result = (double) pow(op1_n.return_floatingPointValue(), op2_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "min" ){
 
-					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
+					result = std::min(op1_n, op2_n);
 				}
 				else if ( (*t) -> value() == "max" ){
 
-					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+					result = std::max(op1_n, op2_n);
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
 
@@ -1111,16 +1075,15 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
+				signed_numerical op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
-				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				signed_numerical op2_n = numptr -> getValue();
+				if (op1_n.return_isFloat() or op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound must be greater than or equal to range lower bound.");
+				if (op1_n > op2_n ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound must be greater than or equal to range lower bound.");
 
-				evalStack.push( new SetOperand({std::make_pair(op1_n.getInt(), op2_n.getInt())}) );
+				evalStack.push( new SetOperand({std::make_pair( (int) op1_n.return_floatingPointValue(), (int) op2_n.return_floatingPointValue())}) );
 				delete operand1; delete operand2;
 			}
 			else if ( (*t) -> value() == "U" or (*t) -> value() == "I" or (*t) -> value() == "\\" ){
@@ -1139,9 +1102,9 @@ std::cout << std::endl;
 				if (operand1 -> identify() == "Numerical"){
 
 					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-					Numerical op1_n = numptr -> getValue();
-					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-					op1_s = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
+					signed_numerical op1_n = numptr -> getValue();
+					if (op1_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op1_s = {std::make_pair((int) op1_n.return_floatingPointValue(), (int) op1_n.return_floatingPointValue())};
 				}
 				else{
 
@@ -1152,9 +1115,9 @@ std::cout << std::endl;
 				if (operand2 -> identify() == "Numerical"){
 
 					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand2);
-					Numerical op2_n = numptr -> getValue();
-					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-					op2_s = {std::make_pair(op2_n.getInt(), op2_n.getInt())};
+					signed_numerical op2_n = numptr -> getValue();
+					if (op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op2_s = {std::make_pair((int) op2_n.return_floatingPointValue(), (int) op2_n.return_floatingPointValue())};
 				}
 				else{
 
@@ -1189,7 +1152,7 @@ std::cout << std::endl;
 				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
 			}			
 
-			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			signed_numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
 			evalStack.push( new NumericalOperand(result) );
 		}
 	}
@@ -1200,9 +1163,9 @@ std::cout << std::endl;
 	if ( evalStack.top() -> identify() == "Numerical" ){
 
 		NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
-		Numerical op1_n = numptr -> getValue();
-		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-		result = {std::make_pair(op1_n.getInt(), op1_n.getInt())};
+		signed_numerical op1_n = numptr -> getValue();
+		if (op1_n.return_isFloat()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+		result = {std::make_pair((int) op1_n.return_floatingPointValue(), (int) op1_n.return_floatingPointValue())};
 	}
 	else{
 
@@ -1222,7 +1185,10 @@ for ( auto itr = result.begin(); itr < result.end(); itr++ ){
 }
 
 
-bool evalRPN_setTest( int &toTest, std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, Numerical > &localVariables){
+bool evalRPN_setTest( int &testInt, std::vector< Token * > &inputRPN, ParameterValues &param2value, GlobalVariables &globalVariables, std::map< std::string, signed_numerical > &localVariables){
+
+	signed_numerical toTest;
+	toTest = testInt;
 
 #if DEBUG_SETS
 std::cout << "Testing: " << toTest << std::endl;
@@ -1246,24 +1212,25 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand -> identify() != "Numerical") throw WrongType(*t,operand -> identify());
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand);
-				Numerical op_n = numptr -> getValue();
-				if (op_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				signed_numerical op_n = numptr -> getValue();
+				if (op_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				if (op_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "abs" ){
 
-					if (op_n.isInt()) result.setInt(std::abs(op_n.getInt()));
-					else result.setDouble(std::abs(op_n.getDouble()));
+					op_n.inplace_absVal();
+					result = op_n;
 				}
 				else if ( (*t) -> value() == "sqrt" ){
 
-					if (op_n.isInt()) result.setInt(sqrt(op_n.getInt()));
-					else result.setDouble(sqrt(op_n.getDouble()));
+					if (op_n.return_sign() < 0) throw SyntaxError(*t, "Arguments to square root function must be positive.");
+					result = (double) sqrt(op_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "neg" ){
 
-					if (op_n.isInt()) result.setInt(-op_n.getInt());
-					else result.setDouble(-op_n.getDouble());
+					op_n.inplace_negation();
+					result = op_n;
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for function evaluation.");
 
@@ -1280,51 +1247,40 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
+				signed_numerical op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
-				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				signed_numerical op2_n = numptr -> getValue();
+				if (op1_n.return_isFloat() or op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
-				//upcast
-				bool upcast = false;
-				if (op1_n.isDouble() or op2_n.isDouble()) upcast = true;
-
-				Numerical result;
+				signed_numerical result;
 				if ( (*t) -> value() == "+" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() + op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() + op2_n.getInt() );
+					result = op1_n + op2_n;
 				}
 				else if ( (*t) -> value() == "-" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() - op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() - op2_n.getInt() );
+					result = op1_n - op2_n;
 				}
 				else if ( (*t) -> value() == "/" ){
 
-					if (upcast) result.setDouble( op1_n.doubleCast() / op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() / op2_n.getInt() );
+					result = op1_n / op2_n;
 				}
 				else if ( (*t) -> value() == "*" ){
-					if (upcast) result.setDouble( op1_n.doubleCast() * op2_n.doubleCast() );
-					else result.setInt( op1_n.getInt() * op2_n.getInt() );
+
+					result = op1_n * op2_n;
 				}
 				else if ( (*t) -> value() == "^" ){
 
-					if (upcast) result.setDouble( pow(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( pow(op1_n.getInt(), op2_n.getInt()) );
+					result = (double) pow(op1_n.return_floatingPointValue(), op2_n.return_floatingPointValue());
 				}
 				else if ( (*t) -> value() == "min" ){
 
-					if (upcast) result.setDouble( std::min(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::min(op1_n.getInt(), op2_n.getInt()) );
+					result = std::min(op1_n, op2_n);
 				}
 				else if ( (*t) -> value() == "max" ){
 
-					if (upcast) result.setDouble( std::max(op1_n.doubleCast(), op2_n.doubleCast()) );
-					else result.setInt( std::max(op1_n.getInt(), op2_n.getInt()) );
+					result = std::max(op1_n, op2_n);
 				}
 				else throw SyntaxError(*t, "Unrecognised operator for arithmetic evaluation.");
 
@@ -1341,16 +1297,15 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
 				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
+				signed_numerical op1_n = numptr -> getValue();
 				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
-				if (op1_n.isDouble() or op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+				signed_numerical op2_n = numptr -> getValue();
+				if (op1_n.return_isFloat() or op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
 
 				bool result;
-				if (op1_n.getInt() > op2_n.getInt() ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
-				if (op1_n.getInt() <= toTest and toTest <= op2_n.getInt()) result = true;
+				if (op1_n > op2_n ) throw SyntaxError(*t,"Thrown by expression evaluation (sets).  Range upper bound is greater than range lower bound.");
+				if (op1_n <= toTest and toTest <= op2_n) result = true;
 				else result = false;
 
 				evalStack.push( new BoolOperand(result) );
@@ -1366,20 +1321,15 @@ std::cout << std::endl;
 				evalStack.pop();
 				if (operand1 -> identify() != "Numerical" and operand1 -> identify() != "Bool") throw WrongType(*t,operand1 -> identify());
 				if (operand2 -> identify() != "Numerical" and operand2 -> identify() != "Bool") throw WrongType(*t,operand2 -> identify());
-				Numerical op1_n,op2_n;
-				NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-				op1_n = numptr -> getValue();
-				numptr = static_cast<NumericalOperand *>(operand2);
-				op2_n = numptr -> getValue();
 				
 				//get everything in bool format
 				bool op1_s;
 				if (operand1 -> identify() == "Numerical"){
 
 					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand1);
-					Numerical op1_n = numptr -> getValue();
-					if (op1_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-					op1_s = op1_n.getInt() == toTest;
+					signed_numerical op1_n = numptr -> getValue();
+					if (op1_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op1_s = op1_n == toTest;
 				}
 				else{
 
@@ -1391,9 +1341,9 @@ std::cout << std::endl;
 				if (operand2 -> identify() == "Numerical"){
 
 					NumericalOperand *numptr = static_cast<NumericalOperand *>(operand2);
-					Numerical op2_n = numptr -> getValue();
-					if (op2_n.isDouble()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-					op2_s = op2_n.getInt() == toTest;
+					signed_numerical op2_n = numptr -> getValue();
+					if (op2_n.return_isFloat()) throw WrongType(*t, "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+					op2_s = op2_n == toTest;
 				}
 				else{
 
@@ -1425,7 +1375,7 @@ std::cout << std::endl;
 				throw WrongType(*t, "Operands must be doubles, ints, or variables.");
 			}			
 
-			Numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
+			signed_numerical result = substituteVariable( *t, param2value, globalVariables, localVariables );
 			evalStack.push( new NumericalOperand(result) );
 		}
 	}
@@ -1436,9 +1386,9 @@ std::cout << std::endl;
 	if ( evalStack.top() -> identify() == "Numerical" ){
 
 		NumericalOperand *numptr = static_cast<NumericalOperand *>(evalStack.top());
-		Numerical op1_n = numptr -> getValue();
-		if (op1_n.isDouble()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
-		result = op1_n.doubleCast() == toTest;
+		signed_numerical op1_n = numptr -> getValue();
+		if (op1_n.return_isFloat()) throw WrongType(inputRPN[0], "Parameter expressions in message receive must evaluate to ints, not doubles (either through explicit or implicit casting).");
+		result = op1_n == toTest;
 	}
 	else{
 

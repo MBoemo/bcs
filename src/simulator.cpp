@@ -56,8 +56,8 @@ System::System( std::list< SystemProcess > &s, std::map< std::string, ProcessDef
 	//sum handshake transitions
 	for ( auto chan = _handshakes_Name2Channel.begin(); chan != _handshakes_Name2Channel.end(); chan++ ){
 
-		int newHandshakesAdded;
-		double rateSumIncrease;
+		unsigned_numerical rateSumIncrease;
+		unsigned int newHandshakesAdded = 0;
 		std::tie(newHandshakesAdded,rateSumIncrease) = (chan -> second) -> updateHandshakeCandidates();
 		_candidatesLeft += newHandshakesAdded;
 		_rateSum += rateSumIncrease;
@@ -105,10 +105,8 @@ void System::writeTransition( double time, std::shared_ptr<Candidate> chosen, st
 
 		if ( (chosen -> parameterValues).values.count(*p) > 0 ){
 	
-			Numerical val = (chosen -> parameterValues).values[*p];
-
-			if (val.isInt()) ss << '\t' << *p << '\t' << val.getInt();
-			else ss << '\t' << *p << '\t' << val.getDouble();
+			signed_numerical val = (chosen -> parameterValues).values[*p];
+			ss << '\t' << *p << '\t' << val.return_floatingPointValue();
 		}
 	}
 	ss << std::endl;
@@ -141,17 +139,15 @@ void System::printTransition(double time, std::shared_ptr<Candidate> chosen){
 
 		if ( (chosen -> parameterValues).values.count(*p) > 0 ){
 	
-			Numerical val = (chosen -> parameterValues).values[*p];
-
-			if (val.isInt()) std::cout << '\t' << *p << '\t' << val.getInt();
-			else std::cout << '\t' << *p << '\t' << val.getDouble();
+			signed_numerical val = (chosen -> parameterValues).values[*p];
+			std::cout << '\t' << *p << '\t' << val.return_floatingPointValue();
 		}
 	}
 	std::cout << std::endl;
 }
 
 
-bool System::variableIsDefined(std::string varName, ParameterValues &currentParameters, std::map< std::string, Numerical > &localVariables){
+bool System::variableIsDefined(std::string varName, ParameterValues &currentParameters, std::map< std::string, signed_numerical > &localVariables){
 
 	bool inGlobal =  _globalVars.values.count(varName) > 0;
 	bool inParams =  currentParameters.values.count(varName) > 0;
@@ -161,7 +157,7 @@ bool System::variableIsDefined(std::string varName, ParameterValues &currentPara
 }
 
 
-std::vector< std::string > System::substituteChannelName( std::vector< std::vector< Token * > > channelExpressions, ParameterValues &currentParameters, std::map< std::string, Numerical > &localVariables ){
+std::vector< std::string > System::substituteChannelName( std::vector< std::vector< Token * > > channelExpressions, ParameterValues &currentParameters, std::map< std::string, signed_numerical > &localVariables ){
 
 	std::vector< std::string > channelName;
 
@@ -174,9 +170,10 @@ std::vector< std::string > System::substituteChannelName( std::vector< std::vect
 
 		else{ //this is an expression or variable that should be substituted
 		
-			Numerical evalIdx = evalRPN_numerical(*exp, currentParameters, _globalVars, localVariables);
-			if (evalIdx.isDouble()) throw WrongType((*exp)[0], "Channel name expressions must evaluate to ints, not doubles (either through explicit or implicit casting).");
-			channelName.push_back( std::to_string(evalIdx.getInt()) );
+			signed_numerical evalIdx = evalRPN_numerical(*exp, currentParameters, _globalVars, localVariables);
+			if (evalIdx.return_isFloat()) throw WrongType((*exp)[0], "Channel name expressions must evaluate to ints, not doubles (either through explicit or implicit casting).");
+			int i_channelName = evalIdx.return_floatingPointValue();
+			channelName.push_back( std::to_string(i_channelName) );
 		}
 	}
 	return channelName;
@@ -191,13 +188,18 @@ void System::sumTransitionRates( SystemProcess *sp,
 
 	if ( current -> identify() == "Action" ){
 
-		Numerical rate = evalRPN_numerical( current -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-		if ( rate.doubleCast() <= 0 ) throw BadRate( current -> getToken() );
+		signed_numerical rate = evalRPN_numerical( current -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+		if ( rate.return_sign() <= 0 ) throw BadRate( current -> getToken() );
+		unsigned_numerical unsigned_rate, nclones;
+		unsigned_rate = rate;
 		std::shared_ptr<Candidate> cand( new Candidate( current, currentParameters, sp -> localVariables, sp, parallelProcesses ) );
-		cand -> rate = rate.doubleCast();
+		cand -> rate = unsigned_rate;
 		_nonMsgCandidates[sp].push_back( cand );
 		_candidatesLeft += sp -> clones;
-		_rateSum += rate.doubleCast() * (sp -> clones);
+		nclones = sp -> clones;
+		unsigned_numerical complex;
+		complex = unsigned_rate * nclones;
+		_rateSum += complex;
 	}
 	else if ( current -> identify() == "MessageSend" ){
 
@@ -206,19 +208,21 @@ void System::sumTransitionRates( SystemProcess *sp,
 
 		if ( msb -> isHandshake() ){
 
-			Numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
-			if ( rate.doubleCast() <= 0 ) throw BadRate( current -> getToken() );
+			signed_numerical rate = evalRPN_numerical( msb -> getRate(), currentParameters, _globalVars, sp -> localVariables );
+			if ( rate.return_sign() <= 0 ) throw BadRate( current -> getToken() );
 
 			std::shared_ptr< Candidate > cand( new Candidate( msb, currentParameters, sp -> localVariables, sp, parallelProcesses) );
 
-			cand -> rate = rate.doubleCast();
+			cand -> rate = rate;
 
 			//evaluate each parameter expression
 			std::vector< std::vector< Token * > > parameterExpressions = msb -> getParameterExpression();
 			for ( auto exp = parameterExpressions.begin(); exp < parameterExpressions.end(); exp++ ){
 
-				Numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
-				(cand -> sendReceiveParameters).push_back(paramEval.getInt());
+				signed_numerical paramEval = evalRPN_numerical( *exp, currentParameters, _globalVars, sp -> localVariables );
+				assert(not paramEval.return_isFloat());
+
+				(cand -> sendReceiveParameters).push_back( (int) paramEval.return_floatingPointValue());
 			}
 
 			if ( _handshakes_Name2Channel.find( channelName ) != _handshakes_Name2Channel.end() ){
@@ -425,8 +429,8 @@ void System::removeChosenFromSystem( std::shared_ptr<Candidate> candToRemove, bo
 	//erase any handshake candidate that could be sent or received from sp
 	for ( auto hs = _handshakes_Name2Channel.begin(); hs != _handshakes_Name2Channel.end(); hs++ ){
 
-		int handshakesRemoved;
-		double rateSumDecrease; 
+		unsigned_numerical rateSumDecrease;
+		unsigned int handshakesRemoved;
 		std::tie(handshakesRemoved,rateSumDecrease) = (hs -> second) -> cleanSPFromChannel(sp);
 		_rateSum -= rateSumDecrease;
 		_candidatesLeft -= handshakesRemoved;
@@ -567,7 +571,7 @@ void System::simulate(void){
 		/*draw time of next transition */
 		std::random_device rd;
 		std::mt19937 rnd_gen( rd() );
-		std::exponential_distribution< double > expDist(_rateSum);
+		std::exponential_distribution< double > expDist(_rateSum.return_floatingPointValue());
 		double exponentialDraw = expDist(rnd_gen);
 		_totalTime += exponentialDraw;
 
@@ -582,9 +586,11 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 		/*Monte Carlo step to decide next transition */
 		std::uniform_real_distribution< double > uniDist(0.0, 1.0);
 		double uniformDraw = uniDist(rnd_gen);
+		unsigned_numerical num_uniformDraw;
+		num_uniformDraw = uniformDraw;
 
 		/*go through all the transition candidates and stop when we find the correct one */
-		double runningTotal = 0.0;
+		unsigned_numerical runningTotal;
 		bool found = false;
 		std::list< SystemProcess * > toAdd;
 
@@ -593,14 +599,21 @@ std::cout << "Total time elapsed: " << _totalTime << std::endl;
 
 			std::vector< std::shared_ptr<Candidate> > candidates = s -> second;
 			SystemProcess *sp = s -> first;
-			size_t multiplier = sp -> clones;
+			unsigned_numerical multiplier;
+			multiplier = sp -> clones;
 
 			for ( auto tc = candidates.begin(); tc < candidates.end(); tc++ ){
 
-				double lower = runningTotal / _rateSum;
-				double upper = (runningTotal + multiplier * ( (*tc) -> rate)) / _rateSum;
+				runningTotal += multiplier * ( (*tc) -> rate);
 
-				if ( uniformDraw > lower and uniformDraw <= upper ){
+				/*
+				std::cout << ( (*tc) -> rate).return_floatingPointValue() << std::endl;
+				std::cout << runningTotal.return_floatingPointValue() << std::endl;
+				std::cout << num_uniformDraw.return_floatingPointValue() << std::endl;
+				std::cout << _rateSum.return_floatingPointValue() << std::endl;
+				std::cout << "---------" << std::endl;
+				*/
+				if ( runningTotal >= num_uniformDraw*_rateSum  ){
 #if DEBUG
 std::cout << ">Candidate picked: non-msg action ";
 Block *b = (*tc) -> actionCandidate;
@@ -620,14 +633,13 @@ printTransition(_totalTime, *tc);
 					found = true;
 					goto foundCand;
 				}
-				else runningTotal += (*tc) -> rate * multiplier;
 			}
 		}
 
 		/*if we haven't chosen from the non-messaging choices, look at beacon action */
 		for ( auto chanPair = _beacons_Name2Channel.begin(); chanPair != _beacons_Name2Channel.end(); chanPair++ ){ 
 			
-			std::shared_ptr<Candidate> beaconCand = (chanPair -> second) -> pickCandidate(runningTotal, uniformDraw, _rateSum);
+			std::shared_ptr<Candidate> beaconCand = (chanPair -> second) -> pickCandidate(runningTotal, num_uniformDraw, _rateSum);
 			if ( beaconCand != NULL ){
 
 #if DEBUG
@@ -650,8 +662,8 @@ std::cout << " at rate " << beaconCand -> rate << std::endl;
 						std::vector< std::string > bindingVars = mrb -> getBindingVariable();
 						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
 						
-							Numerical n;
-							n.setInt((beaconCand -> sendReceiveParameters)[i]);
+							signed_numerical n;
+							n = (beaconCand -> sendReceiveParameters)[i];
 							newSp -> localVariables[ bindingVars[i] ] = n;
 						}
 					}
@@ -673,7 +685,7 @@ printTransition(_totalTime, beaconCand);
 		/*if we haven't chosen from the beacon actions, look at the handshakes */
 		for ( auto chanPair = _handshakes_Name2Channel.begin(); chanPair != _handshakes_Name2Channel.end(); chanPair++ ){ 
 			
-			std::shared_ptr<HandshakeCandidate> hsCand = (chanPair -> second) -> pickCandidate(runningTotal, uniformDraw, _rateSum);
+			std::shared_ptr<HandshakeCandidate> hsCand = (chanPair -> second) -> pickCandidate(runningTotal, num_uniformDraw, _rateSum);
 			
 			if ( hsCand != NULL ){
 
@@ -707,8 +719,8 @@ std::cout << " at rate " << hsCand -> rate << std::endl;
 						std::vector< int > receivedParams = hsCand -> getReceivedParam();
 						for ( unsigned int i = 0; i < bindingVars.size(); i++ ){
 
-							Numerical  n;
-							n.setInt(receivedParams[i]);
+							signed_numerical n;
+							n = receivedParams[i];
 							newSp_receive -> localVariables[ bindingVars[i] ] = n;
 						}
 					}
@@ -773,8 +785,8 @@ std::cout << "   Re-summing handshakes... " << std::endl;
 		//sum handshake transitions
 		for ( auto chan = _handshakes_Name2Channel.begin(); chan != _handshakes_Name2Channel.end(); chan++ ){
 
-			int newHandshakesAdded;
-			double rateSumIncrease;
+			unsigned_numerical rateSumIncrease;
+			unsigned int newHandshakesAdded;
 			std::tie(newHandshakesAdded,rateSumIncrease) = (chan -> second) -> updateHandshakeCandidates();
 			_candidatesLeft += newHandshakesAdded;
 			_rateSum += rateSumIncrease;

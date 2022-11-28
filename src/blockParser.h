@@ -17,6 +17,7 @@
 #include <iostream>
 #include "parser.h"
 #include "lexer.h"
+#include "numerical.h"
 
 class Block{
 
@@ -203,14 +204,14 @@ class Candidate;
 class ParameterValues{
 
 	public:
-		std::map< std::string, Numerical > values;
+		std::map< std::string, signed_numerical > values;
 	
 	ParameterValues(){}
 	ParameterValues( const ParameterValues &pv ){
 
 		values = pv.values;
 	}
-	void updateValue(std::string pName, Numerical value){
+	void updateValue(std::string pName, signed_numerical value){
 
 		if ( values.count(pName) > 0 ) values.erase(values.find(pName));
 		values[pName] = value;
@@ -219,14 +220,7 @@ class ParameterValues{
 		std::cout << "number of values: " << values.size() << std::endl;
 		for ( auto i = values.begin(); i != values.end(); i++){
 
-			if ((i->second).isDouble()){
-
-				std::cout << i -> first << " " << (i -> second).getDouble() << " Double" << std::endl;
-			}
-			else{
-
-				std::cout << i -> first << " " << (i -> second).getInt() << " Int" << std::endl;
-			}
+			std::cout << i -> first << " " << (i -> second).return_floatingPointValue() << std::endl;
 		}
 	}
 	unsigned int getSize(void) const{
@@ -242,8 +236,8 @@ class SystemProcess{
 	public:
 		Tree<Block> parseTree;
 		ParameterValues parameterValues;
-		size_t clones = 1;
-		std::map< std::string, Numerical > localVariables; //system line variable substitutions and bound variables
+		unsigned int clones = 1;
+		std::map< std::string, signed_numerical > localVariables; //system line variable substitutions and bound variables
 		SystemProcess(){}
 		SystemProcess( const SystemProcess &sp ){
 
@@ -262,15 +256,15 @@ class Candidate{
 	public:
 		Block *actionCandidate;
 		ParameterValues parameterValues;
-		std::map< std::string, Numerical > localVariables;
+		std::map< std::string, signed_numerical > localVariables;
 		SystemProcess *processInSystem;
-		double rate = 0.0;
+		unsigned_numerical rate;
 		std::vector< int > sendReceiveParameters;
 		std::vector< std::vector< int > > receiveBounds_lb;
 		std::vector< std::vector< int > > receiveBounds_ub;
 		std::list< SystemProcess > parallelProcesses;
 		std::vector< std::string > beaconChannelName;
-		Candidate( Block *b, ParameterValues pv, std::map< std::string, Numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
+		Candidate( Block *b, ParameterValues pv, std::map< std::string, signed_numerical > lv, SystemProcess *si, std::list< SystemProcess > pp ){
 
 			actionCandidate = b;
 			parameterValues = pv;

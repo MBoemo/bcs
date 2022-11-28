@@ -25,9 +25,9 @@ class HandshakeCandidate{
 		std::vector< int > receivedParam;
 		bool bindsVariable = false;
 		std::string bindingVariable;
-		double rate;
+		unsigned_numerical rate;
 		std::vector< std::string > channel;
-		HandshakeCandidate( std::shared_ptr<Candidate> send, std::shared_ptr<Candidate> receive, double r, std::vector< int > i, std::vector< std::string > c ){
+		HandshakeCandidate( std::shared_ptr<Candidate> send, std::shared_ptr<Candidate> receive, unsigned_numerical r, std::vector< int > i, std::vector< std::string > c ){
 
 			hsSendCand = send;
 			hsReceiveCand = receive;
@@ -59,9 +59,9 @@ class HandshakeChannel{
 		HandshakeChannel( const HandshakeChannel & );
 		std::vector< std::string > getChannelName(void);
 		std::shared_ptr<HandshakeCandidate> buildHandshakeCandidate( std::shared_ptr<Candidate> , std::shared_ptr<Candidate> , std::vector<int> );
-		std::pair<int, double> updateHandshakeCandidates(void);
-		std::pair< int, double > cleanSPFromChannel( SystemProcess * );
-		std::shared_ptr<HandshakeCandidate> pickCandidate(double &, double , double );
+		std::pair<unsigned int, unsigned_numerical> updateHandshakeCandidates(void);
+		std::pair< unsigned int, unsigned_numerical > cleanSPFromChannel( SystemProcess * );
+		std::shared_ptr<HandshakeCandidate> pickCandidate(unsigned_numerical &, unsigned_numerical , unsigned_numerical );
 		void addSendCandidate( std::shared_ptr<Candidate> );
 		void addReceiveCandidate( std::shared_ptr<Candidate> );
 		bool matchClone (SystemProcess *, SystemProcess *);

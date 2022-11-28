@@ -149,10 +149,10 @@ class BeaconChannel{
 		BeaconChannel( std::vector< std::string >, GlobalVariables & );
 		BeaconChannel( const BeaconChannel & );
 		std::vector< std::string > getChannelName(void);
-		void updateBeaconCandidates(int &, double &);
-		void cleanSPFromChannel( SystemProcess *, int &, double & );
-		std::shared_ptr<Candidate> pickCandidate(double &, double, double);
-		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, double & );
+		void updateBeaconCandidates(int &, unsigned_numerical &);
+		void cleanSPFromChannel( SystemProcess *, int &, unsigned_numerical & );
+		std::shared_ptr<Candidate> pickCandidate(unsigned_numerical &, unsigned_numerical, unsigned_numerical);
+		void addCandidate( Block *, SystemProcess *, std::list< SystemProcess > , ParameterValues &, int &, unsigned_numerical & );
 		bool matchClone( SystemProcess *, SystemProcess *);
 		void cleanCloneFromChannel( SystemProcess * );
 };

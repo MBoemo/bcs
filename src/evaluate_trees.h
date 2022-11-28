@@ -48,13 +48,13 @@ class DoubleOperand: public RPNoperand {
 class NumericalOperand: public RPNoperand {
 
 	private:
-		Numerical _underlyingNumerical;
+		signed_numerical _underlyingNumerical;
 
 	public:
-		NumericalOperand( Numerical &in ){_underlyingNumerical = in;}
+		NumericalOperand( signed_numerical &in ){_underlyingNumerical = in;}
 		~NumericalOperand(){}
 		std::string identify(void) const {return "Numerical";}
-		Numerical getValue(void){return _underlyingNumerical;}
+		signed_numerical getValue(void){return _underlyingNumerical;}
 };
 
 class BoolOperand: public RPNoperand {
@@ -82,13 +82,13 @@ class SetOperand: public RPNoperand {
 };
 
 
-Numerical evalRPN_numerical( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-bool evalRPN_condition( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
-bool evalRPN_setTest( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+signed_numerical evalRPN_numerical( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > &);
+bool evalRPN_condition( std::vector< Token * >, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > &);
+std::vector< std::pair<int, int> > evalRPN_set( std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > &);
+bool evalRPN_setTest( int &, std::vector< Token * > &, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > &);
 std::vector< Token * > shuntingYard( std::vector< Token * > &inputExp );
-Numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > & );
-bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, Numerical > &);
+signed_numerical substituteVariable( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > & );
+bool variableIsDefined( Token *, ParameterValues &, GlobalVariables &, std::map< std::string, signed_numerical > &);
 bool castToDouble( std::vector<Token * > , GlobalVariables &, ParameterValues & );
 
 #endif

@@ -624,8 +624,8 @@ void secondParseSystemLine( std::vector< Token * > &tokenisedSL, std::list< Syst
 
 					std::vector< Token * > parsedIntlExp = shuntingYard( split_tokenisedParam[i] );
 					ParameterValues ParameterValues_dummy;
-					std::map< std::string, Numerical > localVariables_dummy;
-					Numerical intlValue = evalRPN_numerical(parsedIntlExp, ParameterValues_dummy, globalVars, localVariables_dummy);
+					std::map< std::string, signed_numerical > localVariables_dummy;
+					signed_numerical intlValue = evalRPN_numerical(parsedIntlExp, ParameterValues_dummy, globalVars, localVariables_dummy);
 					pValues.updateValue(parameterVar[i], intlValue);
 				}
 				sp.parameterValues = pValues;
@@ -656,9 +656,11 @@ for (auto param = sp.parameterValues.values.begin(); param != sp.parameterValues
 			if ( (*t) -> identify() == "Variable" ){
 
 				if ( globalVars.values.count(str_multiplier) == 0 ) throw UndefinedVariable( *t );
-				Numerical multiplier_n = globalVars.values.at(str_multiplier);
-				if (multiplier_n.isDouble()) throw SyntaxError( *t, "Thrown by block parser: System process multiplier must be an int, not a float.");
-				multiplier = multiplier_n.getInt();
+				signed_numerical multiplier_n = globalVars.values.at(str_multiplier);
+				if (multiplier_n.return_sign() == -1 or multiplier_n.return_isFloat()){
+					throw SyntaxError( *t, "Thrown by block parser: System process multiplier must be an integer greater than zero.");
+				}
+				multiplier = (unsigned int) multiplier_n.return_floatingPointValue();
 			}
 			else{
 
@@ -666,7 +668,7 @@ for (auto param = sp.parameterValues.values.begin(); param != sp.parameterValues
 			}
 
 
-			if ( multiplier <= 0 ) throw SyntaxError(*t, "Thrown by block parser: System process multiplier must be greater than zero.");
+			if ( multiplier <= 0 ) throw SyntaxError(*t, "Thrown by block parser: System process multiplier must be an integer greater than zero.");
 		}
 	}
 }
@@ -734,8 +736,8 @@ void checkProcessDefinition( Block *b, Tree<Block> &bt, std::map< std::string, P
 
 
 std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess > > secondPassParse( std::vector< Tree<Token> > processDefPTs,
-		                                                                                             std::vector< Token* > tokenisedSystemLine,
-																									 GlobalVariables &globalVars ){
+													 std::vector< Token* > tokenisedSystemLine,
+													 GlobalVariables &globalVars ){
 //main function for second pass parsing.  sets the root of the new block tree, calls
 //secondParseProcessDef to fill out the tree, then substitutes all variables 
 //arguments:
@@ -773,7 +775,10 @@ std::pair< std::map< std::string, ProcessDefinition >, std::list< SystemProcess 
 					flip++; flip %= 2;
 					continue;
 				}
-				else throw SyntaxError( *t, "Thrown by block parser: Unrecognised token in parameter list - must be a variable or a comma." );
+				else{
+					std::cout << (*t) -> identify() << std::endl;
+					throw SyntaxError( *t, "Thrown by block parser: Unrecognised token in parameter list - must be a variable or a comma." );
+				}
 			}
 		}
 
