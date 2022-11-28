@@ -14,7 +14,6 @@
 #include <string>
 #include <iostream>
 #include <math.h>
-#include "error_handling.h"
 
 #define NUM_INT_BITS 32
 #define NUM_FRAC_BITS 32
@@ -32,18 +31,18 @@ class signed_numerical{
 
 		void warnUnderflow(std::string s){
 
-			std::cerr << "Warning: Overflow/underflow on signed_numerical from std::string constructor. ";
-			std::cerr << "Value is: " << s << std::endl;
+			std::cerr << "Warning: Overflow/underflow on signed_numerical from std::string constructor.\n";
+			std::cerr << "  Value is: " << s << std::endl;
 		}
 		void warnUnderflow(const int &i){
 
-			std::cerr << "Warning: Overflow/underflow on signed_numerical from int constructor. ";
-			std::cerr << "Value is: " << std::to_string(i) << std::endl;
+			std::cerr << "Warning: Overflow/underflow on signed_numerical from int constructor.\n";
+			std::cerr << "  Value is: " << std::to_string(i) << std::endl;
 		}
 		void warnUnderflow(const double &i){
 
-			std::cerr << "Warning: Overflow/underflow on signed_numerical from double constructor. ";
-			std::cerr << "Value is: " << std::to_string(i) << std::endl;
+			std::cerr << "Warning: Overflow/underflow on signed_numerical from double constructor.\n";
+			std::cerr << "  Value is: " << std::to_string(i) << std::endl;
 		}
 
 	public:
@@ -236,18 +235,18 @@ class unsigned_numerical{
 
 		void warnUnderflow(std::string s){
 
-			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from std::string constructor. ";
-			std::cerr << "Value is: " << s << std::endl;
+			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from std::string constructor.\n";
+			std::cerr << "  Value is: " << s << std::endl;
 		}
 		void warnUnderflow(const int &i){
 
-			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from int constructor. ";
-			std::cerr << "Value is: " << std::to_string(i) << std::endl;
+			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from int constructor.\n";
+			std::cerr << "  Value is: " << std::to_string(i) << std::endl;
 		}
 		void warnUnderflow(const double &i){
 
-			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from double constructor. ";
-			std::cerr << "Value is: " << std::to_string(i) << std::endl;
+			std::cerr << "Warning: Overflow/underflow on unsigned_numerical from double constructor.\n";
+			std::cerr << "  Value is: " << std::to_string(i) << std::endl;
 		}
 
 	public:
